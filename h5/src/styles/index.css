@@ -1,0 +1,231 @@
+/* ===================== 主题变量 ===================== */
+:root {
+  --tc-red: #e63946;
+  --tc-red-deep: #c1121f;
+  --tc-red-light: #ffe9ec;
+  --tc-green: #2a9d5c;
+  --tc-green-light: #e8f6ee;
+  --tc-gold: #ffb703;
+  --tc-text: #22242a;
+  --tc-text-sub: #7a7d86;
+  --tc-bg: #f5f5f7;
+
+  /* 覆盖 Vant 主题色 */
+  --van-primary-color: #e63946;
+  --van-success-color: #2a9d5c;
+  --van-danger-color: #e63946;
+  --van-warning-color: #ffb703;
+  --van-button-primary-background: #e63946;
+  --van-button-primary-border-color: #e63946;
+  --van-nav-bar-title-text-color: #ffffff;
+  --van-tabbar-item-active-color: #e63946;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial,
+    Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+  font-size: 14px;
+  color: var(--tc-text);
+  background: var(--tc-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+}
+
+/* ===================== 导航栏（红底白字） ===================== */
+.tc-nav {
+  background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+}
+.tc-nav .van-nav-bar__title {
+  color: #fff;
+  font-weight: 600;
+}
+.tc-nav .van-icon {
+  color: #fff !important;
+}
+.tc-nav .van-nav-bar__text {
+  color: #fff;
+}
+
+/* ===================== 通用工具类 ===================== */
+.price {
+  color: var(--tc-red);
+  font-weight: 700;
+}
+.price-symbol {
+  font-size: 12px;
+}
+.price-old {
+  color: #b0b3ba;
+  text-decoration: line-through;
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.red-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 3px;
+  background: var(--tc-red-light);
+  color: var(--tc-red);
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.green-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 3px;
+  background: var(--tc-green-light);
+  color: var(--tc-green);
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.gold-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 3px;
+  background: #fff5dd;
+  color: #d48806;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.section {
+  margin: 10px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--tc-red);
+  margin-right: 6px;
+}
+
+.section-more {
+  color: var(--tc-text-sub);
+  font-size: 12px;
+}
+
+/* 有底部 tabbar 的页面留出空间 */
+.page-with-tabbar {
+  padding-bottom: 60px;
+}
+
+/* 有底部操作栏的页面留出空间 */
+.page-with-footerbar {
+  padding-bottom: 70px;
+}
+
+/* 底部操作栏 */
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 8px 12px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.tc-btn {
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #e63946, #c1121f);
+}
+.tc-btn-green {
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #35b46f, #2a9d5c);
+}
+
+/* 空状态 */
+.empty-wrap {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--tc-text-sub);
+}
+.empty-wrap .van-icon {
+  font-size: 56px;
+  color: #d8dae0;
+}
+.empty-wrap p {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+/* 时间倒计时 */
+.countdown-text {
+  color: var(--tc-red);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 长文本省略 */
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ellipsis-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 详情页富文本 */
+.rich-content {
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  word-break: break-all;
+}
+.rich-content img {
+  max-width: 100%;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "nongxian-mall-h5",
+  "version": "1.0.0",
+  "private": true,
+  "description": "田冲助农商城 H5 移动端用户前端",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@rollup/pluginutils": "^5.4.0",
+    "@vant/area-data": "^1.5.0",
+    "axios": "^1.7.0",
+    "dayjs": "^1.11.10",
+    "pinia": "^2.1.7",
+    "vant": "^4.9.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@vant/auto-import-resolver": "^1.2.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "postcss-px-to-viewport": "^1.1.1",
+    "unplugin-vue-components": "^0.26.0",
+    "vite": "^5.2.0"
+  }
+}

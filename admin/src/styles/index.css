@@ -1,0 +1,125 @@
+/* ===== 田冲助农商城 · 管理后台 全局样式（党建红主题） ===== */
+
+:root {
+  /* Element Plus 主色覆盖为党建红 */
+  --el-color-primary: #d4380d;
+  --el-color-primary-light-3: #e06a45;
+  --el-color-primary-light-5: #e98f70;
+  --el-color-primary-light-7: #f2b69e;
+  --el-color-primary-light-8: #f6c9b6;
+  --el-color-primary-light-9: #fadcd0;
+  --el-color-primary-dark-2: #aa2d0b;
+  --tc-red: #d4380d;
+  --tc-red-deep: #a82508;
+  --tc-sidebar-bg: #262626;
+  --tc-sidebar-width: 220px;
+  --tc-header-height: 56px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* 通用页面容器 */
+.page-container {
+  padding: 16px;
+}
+
+/* 搜索/筛选区域卡片 */
+.filter-card {
+  margin-bottom: 16px;
+}
+
+.filter-card .el-form-item {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+/* 表格内图片 */
+.table-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+/* 统计卡片 */
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card .stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  font-size: 28px;
+  color: #fff;
+}
+
+.stat-card .stat-info .stat-label {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.stat-card .stat-info .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.stat-card .stat-info .stat-sub {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* 金额红色高亮 */
+.money {
+  color: #d4380d;
+  font-weight: 600;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* 分页容器 */
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

@@ -1,0 +1,27 @@
+# 忽略依赖
+node_modules/
+vendor/
+
+# 忽略构建产物
+admin/dist/
+h5/dist/
+
+# 忽略运行时
+api/runtime/
+api/public/uploads/*
+
+# 忽略环境配置
+.env
+api/config/database.local.php
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
