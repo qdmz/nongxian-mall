@@ -138,7 +138,10 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('app')
-    const cfg = data && data.configs ? data.configs : data || {}
+    // data = {app: [{key, value, type}, ...]}
+    const groupArr = (data && data.app) || []
+    const cfg = {}
+    groupArr.forEach(item => { cfg[item.key] = item.value })
     form.app_name = cfg.app_name || ''
     form.app_logo = cfg.app_logo || ''
     form.app_description = cfg.app_description || ''

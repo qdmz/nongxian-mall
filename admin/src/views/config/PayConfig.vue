@@ -152,13 +152,20 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('pay')
-    const cfg = data && data.configs ? data.configs : data || {}
+    // data = {pay: [{key, value, type, is_set}, ...]}
+    const groupArr = (data && data.pay) || []
+    const cfg = {}
+    let keyIsSet = false
+    groupArr.forEach(item => {
+      cfg[item.key] = item.value
+      if (item.type === 'password') keyIsSet = !!item.is_set
+    })
     form.pay_enabled = Number(cfg.pay_enabled || 0)
     form.pay_gateway = cfg.pay_gateway || ''
     form.pay_pid = cfg.pay_pid || ''
     form.pay_key = ''
     form.pay_default_type = cfg.pay_default_type || 'alipay'
-    keyIsSet.value = !!(cfg.pay_key_is_set || cfg.is_set || data && data.pay_key_is_set)
+    keyIsSet.value = keyIsSet
   } finally {
     loading.value = false
   }

@@ -153,7 +153,16 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('smtp')
-    const cfg = data && data.configs ? data.configs : data || {}
+    // data = {smtp: [{key, value, type, is_set}, ...]}
+    const groupArr = (data && data.smtp) || []
+    const cfg = {}
+    let passwordIsSet = false
+    groupArr.forEach(item => {
+      cfg[item.key] = item.value
+      if (item.type === 'password') {
+        passwordIsSet = !!item.is_set
+      }
+    })
     form.smtp_enabled = Number(cfg.smtp_enabled || 0)
     form.smtp_host = cfg.smtp_host || ''
     form.smtp_port = Number(cfg.smtp_port || 465)
@@ -161,7 +170,7 @@ async function loadConfig() {
     form.smtp_username = cfg.smtp_username || ''
     form.smtp_password = ''
     form.smtp_from_name = cfg.smtp_from_name || ''
-    pwdIsSet.value = !!(cfg.smtp_password_is_set || cfg.is_set || (data && data.smtp_password_is_set))
+    pwdIsSet.value = passwordIsSet
   } finally {
     loading.value = false
   }

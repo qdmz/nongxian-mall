@@ -146,14 +146,21 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('sms')
-    const cfg = data && data.configs ? data.configs : data || {}
+    // data = {sms: [{key, value, type, is_set}, ...]}
+    const groupArr = (data && data.sms) || []
+    const cfg = {}
+    let secretIsSet = false
+    groupArr.forEach(item => {
+      cfg[item.key] = item.value
+      if (item.type === 'password') secretIsSet = !!item.is_set
+    })
     form.sms_enabled = Number(cfg.sms_enabled || 0)
     form.sms_provider = cfg.sms_provider || 'aliyun'
     form.sms_access_key = cfg.sms_access_key || ''
     form.sms_secret = ''
     form.sms_sign = cfg.sms_sign || ''
     form.sms_template_code = cfg.sms_template_code || ''
-    secretIsSet.value = !!(cfg.sms_secret_is_set || cfg.is_set || (data && data.sms_secret_is_set))
+    secretIsSet.value = secretIsSet
   } finally {
     loading.value = false
   }
