@@ -1,1 +1,3 @@
-SELECT `id`, `group`, `key`, LEFT(`value`, 50) as val, `name` FROM system_configs ORDER BY `group`, `key`;
+SELECT `key`, `value` FROM system_configs 
+WHERE `key` LIKE '%enabled%' OR `key` LIKE 'smtp%' OR `key` LIKE 'epay%' OR `key` LIKE 'sms%' OR `key` LIKE 'app_%' 
+ORDER BY `key`;

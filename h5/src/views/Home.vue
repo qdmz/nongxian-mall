@@ -44,11 +44,21 @@
             <span class="rb-title">🚩 党员推荐 · 甄选好物</span>
             <span class="rb-sub">品质放心 · 产地直发</span>
           </div>
-          <div class="rb-scroll">
-            <div class="rb-card" v-for="p in home.recommend" :key="p.id" @click="goProduct(p.id)">
-              <img :src="p.cover_image" :alt="p.name" />
-              <div class="rb-name ellipsis">{{ p.name }}</div>
-              <div class="rb-price">¥{{ Number(p.price).toFixed(2) }}</div>
+          <div class="rb-scroll" ref="recommendScroll">
+            <div class="rb-track" :class="{ 'rb-anim': home.recommend.length > 3 }">
+              <div class="rb-card" v-for="p in home.recommend" :key="p.id" @click="goProduct(p.id)">
+                <img :src="p.cover_image" :alt="p.name" />
+                <div class="rb-name ellipsis">{{ p.name }}</div>
+                <div class="rb-price">¥{{ Number(p.price).toFixed(2) }}</div>
+              </div>
+              <!-- 复制一份实现无缝滚动 -->
+              <template v-if="home.recommend.length > 3">
+                <div class="rb-card" v-for="p in home.recommend" :key="'copy-'+p.id" @click="goProduct(p.id)">
+                  <img :src="p.cover_image" :alt="p.name" />
+                  <div class="rb-name ellipsis">{{ p.name }}</div>
+                  <div class="rb-price">¥{{ Number(p.price).toFixed(2) }}</div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -59,15 +69,17 @@
             <div class="section-title">拼团专区</div>
             <div class="section-more" @click="$router.push('/group-buy')">更多拼团 &gt;</div>
           </div>
-          <div class="gb-scroll">
-            <div class="gb-card" v-for="g in home.group_buy" :key="g.id" @click="$router.push('/group-buy/' + g.id)">
+          <div class="gb-grid">
+            <div class="gb-card" v-for="g in home.group_buy.slice(0, 3)" :key="g.id" @click="$router.push('/group-buy/' + g.id)">
               <img class="gb-img" :src="g.cover_image" :alt="g.name" />
-              <div class="gb-name ellipsis-2">{{ g.name }}</div>
-              <div class="gb-row">
-                <span class="gb-price">¥{{ Number(g.group_price).toFixed(2) }}</span>
-                <span class="gb-count">{{ g.required_count }}人团</span>
+              <div class="gb-info">
+                <div class="gb-name ellipsis-2">{{ g.name }}</div>
+                <div class="gb-row">
+                  <span class="gb-price">¥{{ Number(g.group_price).toFixed(2) }}</span>
+                  <span class="gb-count">{{ g.required_count }}人团</span>
+                </div>
+                <div class="gb-ongoing">{{ g.group_count || 0 }}个团进行中</div>
               </div>
-              <div class="gb-ongoing">{{ g.group_count || 0 }}个团进行中</div>
             </div>
           </div>
         </div>
@@ -286,17 +298,27 @@ onMounted(loadHome)
 }
 .rb-scroll {
   margin-top: 10px;
-  display: flex;
-  overflow-x: auto;
+  overflow: hidden;
   scrollbar-width: none;
+  position: relative;
 }
 .rb-scroll::-webkit-scrollbar {
   display: none;
 }
+.rb-track {
+  display: flex;
+  gap: 10px;
+}
+.rb-anim {
+  animation: rb-scroll 20s linear infinite;
+}
+@keyframes rb-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 .rb-card {
   width: 88px;
   flex-shrink: 0;
-  margin-right: 10px;
   background: #fff;
   border-radius: 8px;
   padding: 6px;
@@ -319,29 +341,28 @@ onMounted(loadHome)
   font-size: 13px;
 }
 
-.gb-scroll {
-  display: flex;
-  overflow-x: auto;
+.gb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   padding: 0 12px 12px;
-  scrollbar-width: none;
-}
-.gb-scroll::-webkit-scrollbar {
-  display: none;
 }
 .gb-card {
-  width: 120px;
-  flex-shrink: 0;
-  margin-right: 10px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
 }
 .gb-img {
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
+  width: 100%;
+  height: 100px;
   object-fit: cover;
   background: #f2f3f5;
 }
+.gb-info {
+  padding: 6px;
+}
 .gb-name {
-  margin-top: 6px;
   font-size: 12px;
   line-height: 16px;
   height: 32px;
@@ -356,7 +377,7 @@ onMounted(loadHome)
 .gb-price {
   color: #e63946;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
 }
 .gb-count {
   font-size: 10px;

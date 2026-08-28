@@ -1,6 +1,10 @@
 <template>
   <div class="recharge-page">
-    <van-nav-bar title="钱包充值" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar title="钱包充值" left-arrow class="tc-nav" @click-left="$router.back()">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <div class="section">
       <div class="rc-balance-row">

@@ -47,7 +47,7 @@
         <el-table-column label="商品" min-width="260">
           <template #default="{ row }">
             <div class="product-cell">
-              <img :src="row.image || row.cover" class="table-img" alt="" />
+              <img :src="row.cover_image || row.image || row.cover" class="table-img" alt="" />
               <div class="product-info">
                 <div class="product-name">{{ row.name }}</div>
                 <div class="product-sub">{{ row.subtitle || row.category_name || '-' }}</div>

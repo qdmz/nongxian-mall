@@ -138,17 +138,16 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('app')
-    // data = {app: [{key, value, type}, ...]}
     const groupArr = (data && data.app) || []
     const cfg = {}
     groupArr.forEach(item => { cfg[item.key] = item.value })
     form.app_name = cfg.app_name || ''
     form.app_logo = cfg.app_logo || ''
     form.app_description = cfg.app_description || ''
-    form.service_phone = cfg.service_phone || ''
-    form.service_wechat = cfg.service_wechat || ''
-    form.auto_cancel_minutes = Number(cfg.auto_cancel_minutes || 30)
-    form.auto_confirm_days = Number(cfg.auto_confirm_days || 7)
+    form.service_phone = cfg.app_kefu_phone || ''
+    form.service_wechat = cfg.app_kefu_wechat || ''
+    form.auto_cancel_minutes = Number(cfg.order_auto_cancel_minutes || 30)
+    form.auto_confirm_days = Number(cfg.order_auto_confirm_days || 7)
     form.share_reward_enabled = Number(cfg.share_reward_enabled || 0)
     form.share_reward_rate = Number(cfg.share_reward_rate || 5)
     form.share_reward_max = Number(cfg.share_reward_max || 0)
@@ -181,10 +180,10 @@ async function handleSave() {
         app_name: form.app_name,
         app_logo: form.app_logo,
         app_description: form.app_description,
-        service_phone: form.service_phone,
-        service_wechat: form.service_wechat,
-        auto_cancel_minutes: form.auto_cancel_minutes,
-        auto_confirm_days: form.auto_confirm_days,
+        app_kefu_phone: form.service_phone,
+        app_kefu_wechat: form.service_wechat,
+        order_auto_cancel_minutes: form.auto_cancel_minutes,
+        order_auto_confirm_days: form.auto_confirm_days,
         share_reward_enabled: form.share_reward_enabled,
         share_reward_rate: form.share_reward_rate,
         share_reward_max: form.share_reward_max

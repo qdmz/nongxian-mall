@@ -1,6 +1,10 @@
 <template>
   <div class="gb-list">
-    <van-nav-bar title="拼团专区" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder />
+    <van-nav-bar title="拼团专区" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder>
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <div class="gb-banner">
       <div class="gb-banner-title">邻里拼团 · 产地好价</div>

@@ -1,6 +1,10 @@
 <template>
   <div class="od page-with-footerbar">
-    <van-nav-bar title="订单详情" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar title="订单详情" left-arrow class="tc-nav" @click-left="$router.back()">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-loading v-if="loading" class="page-loading" size="28" vertical>加载中...</van-loading>
 

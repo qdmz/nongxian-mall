@@ -152,7 +152,6 @@ async function loadConfig() {
   loading.value = true
   try {
     const data = await getConfig('pay')
-    // data = {pay: [{key, value, type, is_set}, ...]}
     const groupArr = (data && data.pay) || []
     const cfg = {}
     let keyIsSet = false
@@ -160,11 +159,12 @@ async function loadConfig() {
       cfg[item.key] = item.value
       if (item.type === 'password') keyIsSet = !!item.is_set
     })
+    // 数据库key → 前端key 映射
     form.pay_enabled = Number(cfg.pay_enabled || 0)
-    form.pay_gateway = cfg.pay_gateway || ''
-    form.pay_pid = cfg.pay_pid || ''
+    form.pay_gateway = cfg.epay_api_url || ''
+    form.pay_pid = cfg.epay_pid || ''
     form.pay_key = ''
-    form.pay_default_type = cfg.pay_default_type || 'alipay'
+    form.pay_default_type = cfg.epay_pay_type || 'alipay'
     keyIsSet.value = keyIsSet
   } finally {
     loading.value = false
@@ -179,12 +179,12 @@ async function handleSave() {
     try {
       const configs = {
         pay_enabled: form.pay_enabled,
-        pay_gateway: form.pay_gateway,
-        pay_pid: form.pay_pid,
-        pay_default_type: form.pay_default_type
+        epay_api_url: form.pay_gateway,
+        epay_pid: form.pay_pid,
+        epay_pay_type: form.pay_default_type
       }
       if (form.pay_key) {
-        configs.pay_key = form.pay_key
+        configs.epay_key = form.pay_key
       }
       await saveConfig('pay', configs)
       ElMessage.success('支付配置保存成功')

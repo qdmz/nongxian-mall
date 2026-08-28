@@ -1,6 +1,10 @@
 <template>
   <div class="addr-list">
-    <van-nav-bar title="收货地址" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder />
+    <van-nav-bar title="收货地址" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder>
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-pull-refresh v-model="refreshing" @refresh="loadList">
       <van-loading v-if="loading && !loaded" class="page-loading" size="28" vertical>加载中...</van-loading>

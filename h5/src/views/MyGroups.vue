@@ -1,6 +1,10 @@
 <template>
   <div class="my-groups">
-    <van-nav-bar title="我的拼团" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder />
+    <van-nav-bar title="我的拼团" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder>
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list

@@ -1,6 +1,10 @@
 <template>
   <div class="category page-with-tabbar">
-    <van-nav-bar title="全部分类" class="tc-nav" />
+    <van-nav-bar title="全部分类" class="tc-nav">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <div class="cat-body">
       <!-- 左侧分类列表 -->

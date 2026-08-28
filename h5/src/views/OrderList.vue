@@ -1,6 +1,10 @@
 <template>
   <div class="order-list">
-    <van-nav-bar title="我的订单" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder />
+    <van-nav-bar title="我的订单" left-arrow class="tc-nav" @click-left="$router.back()" fixed placeholder>
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-tabs v-model:active="activeTab" sticky offset-top="46px" class="ol-tabs">
       <van-tab title="全部" :name="-1" />

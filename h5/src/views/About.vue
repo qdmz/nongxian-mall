@@ -1,6 +1,10 @@
 <template>
   <div class="about-page">
-    <van-nav-bar title="关于我们" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar title="关于我们" left-arrow class="tc-nav" @click-left="$router.back()" >
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+</van-nav-bar>
 
     <div class="about-hero">
       <div class="about-logo">🚩</div>

@@ -180,7 +180,7 @@ async function handleSave() {
         sms_template_code: form.sms_template_code
       }
       if (form.sms_secret) {
-        configs.sms_secret = form.sms_secret
+        configs.sms_secret_key = form.sms_secret
       }
       await saveConfig('sms', configs)
       ElMessage.success('短信配置保存成功')

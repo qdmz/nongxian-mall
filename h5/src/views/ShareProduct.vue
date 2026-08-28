@@ -1,6 +1,10 @@
 <template>
   <div class="share-product">
-    <van-nav-bar title="商品分享" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar title="商品分享" left-arrow class="tc-nav" @click-left="$router.back()">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-loading v-if="loading" class="page-loading" size="28" vertical>加载中...</van-loading>
 

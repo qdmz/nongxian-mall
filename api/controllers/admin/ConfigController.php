@@ -28,6 +28,7 @@ class ConfigController extends Controller
                 $item['value'] = '';
             }
         }
+        unset($item); // 避免引用陷阱导致后续循环覆盖最后一个元素
 
         // 按分组组织
         $grouped = [];

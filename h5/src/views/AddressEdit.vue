@@ -1,6 +1,10 @@
 <template>
   <div class="addr-edit">
-    <van-nav-bar :title="isEdit ? '编辑地址' : '新增地址'" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar :title="isEdit ? '编辑地址' : '新增地址'" left-arrow class="tc-nav" @click-left="$router.back()">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <van-form @submit="onSave">
       <van-cell-group inset>

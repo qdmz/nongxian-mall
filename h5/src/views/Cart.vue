@@ -3,6 +3,7 @@
     <van-nav-bar title="购物车" left-arrow class="tc-nav" @click-left="$router.back()">
       <template #right>
         <span v-if="invalidItems.length" class="nav-clear" @click="onClearInvalid">清失效</span>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
       </template>
     </van-nav-bar>
 

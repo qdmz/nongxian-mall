@@ -3,6 +3,7 @@
     <van-nav-bar title="站内消息" left-arrow class="tc-nav" @click-left="$router.back()">
       <template #right>
         <span class="notify-read-all" @click="onReadAll">全部已读</span>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
       </template>
     </van-nav-bar>
 

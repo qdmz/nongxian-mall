@@ -141,7 +141,7 @@
         <el-divider content-position="left">商品图片</el-divider>
         <el-form-item label="封面图">
           <div class="img-uploader" @click="triggerUpload('cover')">
-            <img v-if="form.image" :src="form.image" class="cover-preview" alt="封面图" />
+            <img v-if="form.cover_image" :src="form.cover_image" class="cover-preview" alt="封面图" />
             <el-icon v-else class="uploader-icon"><Plus /></el-icon>
           </div>
           <div class="form-tip">建议 800x800，支持 jpg/png/webp</div>
@@ -268,7 +268,7 @@ const form = reactive({
   is_red: 0,
   origin: '',
   farmer: '',
-  image: '',
+  cover_image: '',
   images: [],
   detail: '',
   skus: [],
@@ -321,8 +321,8 @@ async function loadDetail() {
       is_red: d.is_red == 1 ? 1 : 0,
       origin: d.origin || '',
       farmer: d.farmer || d.coop || '',
-      image: d.image || d.cover || '',
-      images: Array.isArray(d.images) ? d.images : [],
+      cover_image: d.cover_image || d.image || d.cover || '',
+      images: Array.isArray(d.images) ? d.images : (d.images_arr || []),
       detail: d.detail || '',
       skus: Array.isArray(d.skus)
         ? d.skus.map((s) => ({
@@ -350,7 +350,7 @@ async function handleFileChange(e) {
   try {
     const data = await uploadImage(file)
     if (uploadTarget.value === 'cover') {
-      form.image = data.url
+      form.cover_image = data.url
     } else {
       form.images.push(data.url)
     }
@@ -398,7 +398,7 @@ function buildPayload() {
     is_red: form.is_red,
     origin: form.origin,
     farmer: form.farmer,
-    image: form.image,
+    cover_image: form.cover_image,
     images: form.images,
     detail: form.detail,
     skus,

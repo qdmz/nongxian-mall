@@ -1,0 +1,198 @@
+{
+  "1": {
+    "name": "遵义朝天椒",
+    "keyword": "chili pepper red",
+    "filename": "chili",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\chili.jpg",
+    "ext": "jpg"
+  },
+  "2": {
+    "name": "安顺山药",
+    "keyword": "yam vegetable",
+    "filename": "yam",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\yam.jpg",
+    "ext": "jpg"
+  },
+  "3": {
+    "name": "贵阳折耳根",
+    "keyword": "herbstoutia",
+    "filename": "zheergen",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\zheergen.jpg",
+    "ext": "jpg"
+  },
+  "4": {
+    "name": "毕节大蒜",
+    "keyword": "garlic",
+    "filename": "garlic",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\garlic.jpg",
+    "ext": "jpg"
+  },
+  "5": {
+    "name": "镇宁樱桃",
+    "keyword": "cherry red",
+    "filename": "cherry",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\cherry.jpg",
+    "ext": "jpg"
+  },
+  "6": {
+    "name": "修文猕猴桃",
+    "keyword": "kiwi fruit",
+    "filename": "kiwi",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\kiwi.jpg",
+    "ext": "jpg"
+  },
+  "7": {
+    "name": "从江香柚",
+    "keyword": "pomelo fruit",
+    "filename": "pomelo",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\pomelo.jpg",
+    "ext": "jpg"
+  },
+  "8": {
+    "name": "罗甸火龙果",
+    "keyword": "dragon fruit",
+    "filename": "dragonfruit",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\dragonfruit.jpg",
+    "ext": "jpg"
+  },
+  "9": {
+    "name": "湄潭翠芽",
+    "keyword": "green tea leaves",
+    "filename": "tea",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\tea.jpg",
+    "ext": "jpg"
+  },
+  "10": {
+    "name": "从江香猪",
+    "keyword": "pig pork",
+    "filename": "xiangzhu",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\xiangzhu.jpg",
+    "ext": "jpg"
+  },
+  "11": {
+    "name": "威宁洋芋",
+    "keyword": "potato",
+    "filename": "potato",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\potato.jpg",
+    "ext": "jpg"
+  },
+  "12": {
+    "name": "贵州红米",
+    "keyword": "red rice",
+    "filename": "redrice",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\redrice.jpg",
+    "ext": "jpg"
+  },
+  "13": {
+    "name": "绿壳蛋",
+    "keyword": "green shell egg",
+    "filename": "greenegg",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\greenegg.jpg",
+    "ext": "jpg"
+  },
+  "14": {
+    "name": "贵州黄牛",
+    "keyword": "yellow cattle beef",
+    "filename": "cattle",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\cattle.jpg",
+    "ext": "jpg"
+  },
+  "15": {
+    "name": "黔东南土鸡",
+    "keyword": "free range chicken",
+    "filename": "chicken",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\chicken.jpg",
+    "ext": "jpg"
+  },
+  "16": {
+    "name": "习酒鸡蛋",
+    "keyword": "egg",
+    "filename": "xijiuegg",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\xijiuegg.jpg",
+    "ext": "jpg"
+  },
+  "17": {
+    "name": "织金竹荪",
+    "keyword": "bamboo mushroom",
+    "filename": "zhusun",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\zhusun.jpg",
+    "ext": "jpg"
+  },
+  "18": {
+    "name": "野生黑木耳",
+    "keyword": "black wood ear mushroom",
+    "filename": "woodear",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\woodear.jpg",
+    "ext": "jpg"
+  },
+  "19": {
+    "name": "大方天麻",
+    "keyword": "gastrodia herb",
+    "filename": "tianma",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\tianma.jpg",
+    "ext": "jpg"
+  },
+  "20": {
+    "name": "贵州香菇",
+    "keyword": "shiitake mushroom",
+    "filename": "mushroom",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\mushroom.jpg",
+    "ext": "jpg"
+  },
+  "21": {
+    "name": "贵州茅台镇酱香酒",
+    "keyword": "baijiu liquor bottle",
+    "filename": "maotai",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\maotai.jpg",
+    "ext": "jpg"
+  },
+  "22": {
+    "name": "老干妈辣椒酱",
+    "keyword": "chili sauce bottle",
+    "filename": "laoganma",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\laoganma.jpg",
+    "ext": "jpg"
+  },
+  "23": {
+    "name": "刺梨干",
+    "keyword": "rosa roxburghii dried",
+    "filename": "ciligan",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\ciligan.jpg",
+    "ext": "jpg"
+  },
+  "24": {
+    "name": "贵州蜡染",
+    "keyword": "batik fabric",
+    "filename": "lalan",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\lalan.jpg",
+    "ext": "jpg"
+  },
+  "25": {
+    "name": "红色助农·爱心礼盒A",
+    "keyword": "gift box red",
+    "filename": "redbox1",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\redbox1.jpg",
+    "ext": "jpg"
+  },
+  "26": {
+    "name": "红色助农·爱心礼盒B",
+    "keyword": "gift box premium",
+    "filename": "redbox2",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\redbox2.jpg",
+    "ext": "jpg"
+  },
+  "27": {
+    "name": "党员推荐·有机大米",
+    "keyword": "organic rice bag",
+    "filename": "redrice_party",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\redrice_party.jpg",
+    "ext": "jpg"
+  },
+  "28": {
+    "name": "助农山茶油",
+    "keyword": "tea oil bottle",
+    "filename": "teaoil",
+    "local_path": "C:\\Users\\admin\\WorkBuddy\\2026-08-25-16-30-21\\nongxian-mall\\deploy\\product_images\\teaoil.jpg",
+    "ext": "jpg"
+  }
+}

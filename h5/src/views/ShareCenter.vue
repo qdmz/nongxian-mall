@@ -1,6 +1,10 @@
 <template>
   <div class="share-page">
-    <van-nav-bar title="推广中心" left-arrow class="tc-nav" @click-left="$router.back()" />
+    <van-nav-bar title="推广中心" left-arrow class="tc-nav" @click-left="$router.back()">
+      <template #right>
+        <van-icon name="home-o" size="18" @click="$router.push('/')" />
+      </template>
+    </van-nav-bar>
 
     <!-- 推广码卡片 -->
     <div class="sc-card">
