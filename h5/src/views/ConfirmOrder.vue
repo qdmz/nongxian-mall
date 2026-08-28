@@ -251,7 +251,7 @@ async function onSubmit() {
         quantity: i.quantity
       })),
       remark: remark.value,
-      use_balance: useBalance.value && userStore.balance > 0 ? 1 : 0,
+      use_balance: useBalance.value && userStore.balance > 0 ? Math.min(userStore.balance, totalAmount.value) : 0,
       from_cart: fromCart.value ? 1 : 0
     })
     userStore.fetchCartCount().catch(() => {})

@@ -189,7 +189,7 @@ class OrderController extends Controller
 
     /**
      * POST /api/orders/{id}/pay
-     * 发起支付（易支付）
+     * 发起支付（balance/wxpay/alipay/qqpay）
      */
     public function pay(array $params): void
     {
@@ -202,7 +202,39 @@ class OrderController extends Controller
             json_error('订单状态不可支付');
         }
 
-        $payType = $this->request->string('pay_type'); // alipay/wxpay/qqpay
+        $payType = $this->request->string('pay_type'); // balance/alipay/wxpay/qqpay
+
+        // 余额支付
+        if ($payType === 'balance') {
+            $payAmount = (float)$order['pay_amount'];
+            $user = User::find($userId);
+            if ((float)$user['wallet_balance'] < $payAmount) {
+                json_error('余额不足，请先充值');
+            }
+            // 创建支付单（标记为已支付）
+            $paymentNo = order_no('P');
+            db()->insert('payments', [
+                'payment_no' => $paymentNo,
+                'biz_type' => 'order',
+                'biz_no' => $order['order_no'],
+                'user_id' => $userId,
+                'amount' => $payAmount,
+                'method' => 'balance',
+                'channel' => 'balance',
+                'status' => 1,
+                'created_at' => time(),
+                'updated_at' => time(),
+            ]);
+            // 扣余额
+            if (!User::walletChange($userId, -$payAmount, 'consume', '余额支付订单', 'order', $order['order_no'])) {
+                json_error('余额扣款失败');
+            }
+            // 触发支付成功处理
+            OrderService::handleOrderPaid($order['order_no'], ['type' => 'balance', 'trade_no' => $paymentNo]);
+            json_success(['success' => true, 'pay_url' => ''], '支付成功');
+            return;
+        }
+
         $baseUrl = $this->getBaseUrl();
 
         // 创建支付单

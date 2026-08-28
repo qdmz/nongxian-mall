@@ -40,6 +40,19 @@
       <div class="section">
         <div class="section-head"><div class="section-title">选择支付方式</div></div>
         <van-radio-group v-model="payType">
+          <!-- 余额支付（有余额时显示） -->
+          <van-cell clickable @click="payType = 'balance'" v-if="balance > 0">
+            <template #title>
+              <div class="pay-method">
+                <span class="pay-method-icon wallet">¥</span>
+                <span>余额支付</span>
+                <span v-if="balance < order.pay_amount" class="pay-method-tag">余额不足</span>
+              </div>
+            </template>
+            <template #right-icon>
+              <van-radio name="balance" :disabled="balance < order.pay_amount" />
+            </template>
+          </van-cell>
           <van-cell clickable @click="payType = 'wxpay'">
             <template #title>
               <div class="pay-method">
@@ -135,6 +148,19 @@ async function onPay() {
   }
   paying.value = true
   try {
+    // 余额支付
+    if (payType.value === 'balance') {
+      const data = await payOrder(order.value.id, 'balance')
+      if (data && data.success) {
+        showToast('支付成功')
+        router.replace('/order/detail/' + order.value.id)
+      } else {
+        showToast('支付失败，请稍后重试')
+      }
+      paying.value = false
+      return
+    }
+    // 第三方支付
     const data = await payOrder(order.value.id, payType.value)
     if (data && data.pay_url) {
       showToast('正在跳转支付...')
@@ -152,7 +178,11 @@ async function onPay() {
 onMounted(async () => {
   await loadOrder()
   if (userStore.token) {
-    userStore.fetchProfile().catch(() => {})
+    await userStore.fetchProfile().catch(() => {})
+  }
+  // 余额充足时默认选中余额支付
+  if (balance.value >= order.value.pay_amount) {
+    payType.value = 'balance'
   }
 })
 </script>
@@ -226,6 +256,18 @@ onMounted(async () => {
 }
 .pay-method-icon.qq {
   background: #12b7f5;
+}
+.pay-method-icon.wallet {
+  background: #f59e0b;
+}
+.pay-method-tag {
+  margin-left: 8px;
+  font-size: 10px;
+  color: #f59e0b;
+  background: #fffbe6;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid #ffe58f;
 }
 .pay-tip {
   text-align: center;
