@@ -1,0 +1,19 @@
+{
+  "name": "nongxian-mall",
+  "version": "1.0.0",
+  "private": true,
+  "description": "田冲助农商城 - 单端口预览服务器（H5 + 管理后台 + PHP API 代理）",
+  "type": "module",
+  "scripts": {
+    "preview": "node preview-server.mjs",
+    "build:h5": "cd h5 && npm run build",
+    "build:admin": "cd admin && npm run build",
+    "build": "npm run build:h5 && npm run build:admin",
+    "docker:up": "docker compose --env-file .env.docker -f docker/docker-compose.yml up -d --build",
+    "docker:down": "docker compose --env-file .env.docker -f docker/docker-compose.yml down",
+    "docker:logs": "docker compose --env-file .env.docker -f docker/docker-compose.yml logs -f app web"
+  },
+  "devDependencies": {
+    "yaml": "2"
+  }
+}

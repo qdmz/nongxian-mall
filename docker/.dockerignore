@@ -1,0 +1,23 @@
+# 构建上下文排除（context=仓库根目录）
+.git
+.gitignore
+.idea
+.vscode
+node_modules
+**/node_modules
+**/dist
+h5/dist
+admin/dist
+*.log
+*.md
+docs
+nginx
+deploy
+scripts
+preview-server.mjs
+start.bat
+import-db.bat
+h5_dist.tar.gz
+docker/README.md
+docker/env.docker.example
+.env*

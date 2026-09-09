@@ -77,6 +77,22 @@ nongxian-mall/
 
 ## 快速开始
 
+### 0. 一键启动（推荐）
+```bash
+# 首次：构建前端（也可用 npm install / npm run build）
+(cd admin && bun install && bun run build)
+(cd h5 && bun install && bun run build)
+
+# 一键启动：数据库 + PHP 后端 + 单端口整合预览
+sh ./scripts/dev-start.sh
+```
+启动后访问：
+- H5 用户端：`http://localhost:8080/`
+- 管理后台：`http://localhost:8080/manage/`（admin / admin123456）
+- API：`http://localhost:8080/api/*`、`/admin/*`（自动代理到 PHP 后端）
+
+演示账号：管理员 `admin / admin123456`；种子用户 `13800138000 / 123456`。
+
 ### 1. 环境要求
 - PHP 8.0+（需 pdo_mysql、curl、fileinfo、mbstring 扩展）
 - MySQL 8.0+

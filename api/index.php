@@ -36,8 +36,15 @@ spl_autoload_register(function (string $class): void {
                 require $file;
                 return;
             }
+            // 大小写兼容：目录段转小写（Linux 服务器目录为小写），类文件名保持原样
+            $pathInfo = pathinfo($file);
+            $fileFixed = strtolower($pathInfo['dirname']) . '/' . $pathInfo['basename'];
+            if ($fileFixed !== $file && is_file($fileFixed)) {
+                require $fileFixed;
+                return;
+            }
             $fileLower = strtolower($file);
-            if (is_file($fileLower)) {
+            if ($fileLower !== $file && is_file($fileLower)) {
                 require $fileLower;
                 return;
             }
