@@ -60,8 +60,8 @@
     <!-- 省市区选择 -->
     <van-popup v-model:show="showArea" position="bottom" round>
       <van-area
+        v-model="areaCode"
         :area-list="areaList"
-        :value="areaCode"
         title="选择地区"
         @confirm="onAreaConfirm"
         @cancel="showArea = false"
@@ -129,11 +129,12 @@ function findAreaCode(province, city, district) {
   return cCode
 }
 
-function onAreaConfirm(values) {
-  const [province, city, district] = values
-  if (province) form.value.province = province.name
-  if (city) form.value.city = city.name
-  if (district) form.value.district = district.name
+// Vant 4 的 confirm 事件参数为 { selectedValues, selectedOptions, selectedIndexes }
+function onAreaConfirm({ selectedOptions }) {
+  const [province, city, district] = selectedOptions || []
+  if (province?.text) form.value.province = province.text
+  if (city?.text) form.value.city = city.text
+  if (district?.text) form.value.district = district.text
   showArea.value = false
 }
 

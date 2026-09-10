@@ -1,6 +1,10 @@
 /* ===================== 主题变量 ===================== */
 :root {
   --tc-red: #e63946;
+  /* 自适应壳：仅宽屏模式下生效 */
+  --h5-shell-max-width: 980px;
+  --h5-shell-padding: min(16px, 6vw);
+
   --tc-red-deep: #c1121f;
   --tc-red-light: #ffe9ec;
   --tc-green: #2a9d5c;
@@ -25,6 +29,12 @@
   box-sizing: border-box;
 }
 
+/* ===================== 响应式基准设定 ===================== */
+/* 设计稿基准 375px；html base = 37.5px，所以 1rem ≈ 10px（桌面/平板自动受限） */
+html {
+  font-size: 37.5px;
+}
+
 html,
 body {
   margin: 0;
@@ -35,6 +45,10 @@ body {
   color: var(--tc-text);
   background: var(--tc-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
 }
 
 img {
@@ -156,7 +170,7 @@ img {
   padding-bottom: 70px;
 }
 
-/* 底部操作栏 */
+/* 底部操作栏：移动端贴满，宽屏时收束进内容壳 */
 .footer-bar {
   position: fixed;
   left: 0;
@@ -168,6 +182,18 @@ img {
   background: #fff;
   padding: 8px 12px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  transition: left .2s, right .2s
+}
+
+.app-shell-wide .footer-bar {
+  left: auto;
+  right: auto;
+  left: var(--h5-shell-padding);
+  right: var(--h5-shell-padding);
+  width: calc(var(--h5-shell-max-width) - var(--h5-shell-padding) * 2);
+  margin-left: auto;
+  margin-right: auto;
+  max-width: var(--h5-shell-max-width);
 }
 
 .tc-btn {
