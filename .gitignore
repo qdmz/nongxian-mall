@@ -25,3 +25,7 @@ Thumbs.db
 
 # 日志
 *.log
+
+# 部署临时打包产物（deploy_frontend.py 用临时目录，不落地仓库；此处兜底）
+*.tar.gz
+

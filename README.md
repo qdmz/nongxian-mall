@@ -143,6 +143,14 @@ cd h5 && npm run build       # 产出 h5/dist/
 ```
 
 ### 2. 上传文件
+
+**方式 A（推荐，命令行一键部署）**：仓库内置参数化部署脚本 `deploy/deploy_frontend.py`（凭据通过 `deploy/.env` 注入，无硬编码）。详见 `CHANGELOG.md` 与 `deploy/.env.example`：
+```bash
+cp deploy/.env.example deploy/.env   # 填写 DEPLOY_PWD 等
+python deploy/deploy_frontend.py --target all --build
+```
+
+**方式 B（手动上传）**：把构建产物按以下结构放到服务器 web 根目录：
 ```
 /www/wwwroot/nongxian-mall/
 ├── api/
