@@ -1,11 +1,15 @@
 <template>
   <el-container class="admin-layout">
-    <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="sidebar">
+    <!-- 侧边栏：桌面/平板正常流，移动端转为抽屉 -->
+    <el-aside
+      class="sidebar"
+      :class="{ 'is-mobile': isMobile, 'drawer-open': isMobile && drawerVisible }"
+      :width="sidebarWidth"
+    >
       <div class="logo-area">
         <div class="logo-mark">田</div>
         <transition name="fade">
-          <div v-if="!isCollapse" class="logo-text">
+          <div v-if="!isMobile && !isCollapse" class="logo-text">
             <div class="logo-title">田冲助农商城</div>
             <div class="logo-sub">管理后台</div>
           </div>
@@ -14,12 +18,13 @@
       <el-scrollbar class="menu-scroll">
         <el-menu
           :default-active="activeMenu"
-          :collapse="isCollapse"
+          :collapse="isMobile ? false : isCollapse"
           :collapse-transition="false"
           background-color="#262626"
           text-color="#a6a6a6"
           active-text-color="#ffffff"
           router
+          @select="onMenuSelect"
         >
           <el-menu-item index="/dashboard">
             <el-icon><Odometer /></el-icon>
@@ -83,15 +88,21 @@
       </el-scrollbar>
     </el-aside>
 
+    <!-- 移动端抽屉遮罩 -->
+    <transition name="fade">
+      <div v-if="isMobile && drawerVisible" class="mobile-mask" @click="drawerVisible = false" />
+    </transition>
+
     <el-container>
       <!-- 顶栏 -->
       <el-header class="header">
         <div class="header-left">
-          <el-icon class="collapse-btn" @click="isCollapse = !isCollapse">
-            <Expand v-if="isCollapse" />
+          <el-icon class="collapse-btn" @click="toggleSidebar">
+            <Menu v-if="isMobile" />
+            <Expand v-else-if="isCollapse" />
             <Fold v-else />
           </el-icon>
-          <el-breadcrumb separator="/">
+          <el-breadcrumb v-if="!isMobile" separator="/">
             <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item v-if="route.meta.group">{{ route.meta.group }}</el-breadcrumb-item>
             <el-breadcrumb-item v-if="route.meta.parent">
@@ -102,6 +113,7 @@
             <el-breadcrumb-item v-if="!route.meta.parent">{{ route.meta.title }}</el-breadcrumb-item>
             <el-breadcrumb-item v-else>{{ route.meta.title }}</el-breadcrumb-item>
           </el-breadcrumb>
+          <span v-else class="mobile-title">田冲助农商城</span>
         </div>
         <div class="header-right">
           <el-dropdown @command="handleCommand">
@@ -135,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useAdminStore } from '../store/admin'
@@ -144,6 +156,17 @@ const route = useRoute()
 const router = useRouter()
 const store = useAdminStore()
 const isCollapse = ref(false)
+const drawerVisible = ref(false)
+const windowWidth = ref(window.innerWidth)
+
+const isMobile = computed(() => windowWidth.value < 768)
+const isMedium = computed(() => windowWidth.value >= 768 && windowWidth.value < 992)
+
+const sidebarWidth = computed(() => {
+  if (isMobile.value) return '220px'
+  if (isMedium.value) return '64px'
+  return isCollapse.value ? '64px' : '220px'
+})
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/products')) return '/products'
@@ -160,10 +183,37 @@ const parentTitle = computed(() => {
   return map[route.meta.parent] || ''
 })
 
+function toggleSidebar() {
+  if (isMobile.value) {
+    drawerVisible.value = !drawerVisible.value
+  } else {
+    isCollapse.value = !isCollapse.value
+  }
+}
+
+function onMenuSelect() {
+  // 移动端点击菜单后自动收起抽屉
+  if (isMobile.value) drawerVisible.value = false
+}
+
+function onResize() {
+  windowWidth.value = window.innerWidth
+  if (windowWidth.value >= 768 && drawerVisible.value) drawerVisible.value = false
+}
+
+watch(isMobile, (val) => {
+  if (!val) drawerVisible.value = false
+})
+
 onMounted(() => {
   if (store.isLoggedIn && !store.adminInfo) {
     store.fetchProfile().catch(() => {})
   }
+  window.addEventListener('resize', onResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
 })
 
 function handleCommand(cmd) {
@@ -196,6 +246,30 @@ function handleCommand(cmd) {
   flex-direction: column;
   transition: width 0.2s;
   overflow: hidden;
+}
+
+/* 移动端抽屉化 */
+.sidebar.is-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 2001;
+  width: 220px !important;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar.is-mobile.drawer-open {
+  transform: translateX(0);
+}
+
+.mobile-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
 }
 
 .logo-area {
@@ -270,6 +344,7 @@ function handleCommand(cmd) {
 .header-left {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .collapse-btn {
@@ -277,6 +352,7 @@ function handleCommand(cmd) {
   margin-right: 16px;
   cursor: pointer;
   color: #666;
+  flex-shrink: 0;
 }
 
 .collapse-btn:hover {
@@ -290,6 +366,13 @@ function handleCommand(cmd) {
 
 .crumb-link:hover {
   color: #d4380d;
+}
+
+.mobile-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  white-space: nowrap;
 }
 
 .header-right {
@@ -330,5 +413,12 @@ function handleCommand(cmd) {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 小屏适配 */
+@media (max-width: 767px) {
+  .admin-name {
+    display: none;
+  }
 }
 </style>
