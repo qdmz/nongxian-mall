@@ -253,18 +253,19 @@ img {
   max-width: 100%;
 }
 
-/* ===================== 桌面端自适应：居中手机壳 ===================== */
-@media screen and (min-width: 540px) {
+/* ===================== 桌面端自适应：卡片式宽屏布局 ===================== */
+/* 不再使用“手机壳”居中窄条，PC 端直接铺满宽度并卡片化多列展示 */
+@media screen and (min-width: 768px) {
   body {
-    background: #e8e8ec;
+    background: #eef0f4;
   }
   #app {
     position: relative;
-    max-width: 540px;
+    max-width: 1200px;
     margin: 0 auto;
-    background: #f5f5f7;
+    background: var(--tc-bg);
     min-height: 100vh;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
   }
   /* 固定定位元素跟随内容壳居中 */
   .van-tabbar--fixed,
@@ -273,7 +274,122 @@ img {
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) !important;
-    width: 540px !important;
+    width: 1200px !important;
     max-width: 100% !important;
+  }
+
+  /* 头部标语与搜索框放大 */
+  .home-header {
+    padding: 28px 28px 60px !important;
+  }
+  .slogan-main {
+    font-size: 26px !important;
+  }
+  .slogan-sub {
+    font-size: 13px !important;
+  }
+  .search-box {
+    height: 44px !important;
+    font-size: 15px !important;
+    border-radius: 22px !important;
+  }
+  .search-box .van-icon {
+    font-size: 18px !important;
+  }
+
+  /* 轮播图更高 */
+  .banner-swipe {
+    margin: -40px 16px 0 !important;
+  }
+  .banner-img {
+    height: 280px !important;
+  }
+
+  /* 区块外边距 / 圆角加大 */
+  .section,
+  .red-zone,
+  .recommend-banner {
+    margin: 16px !important;
+    border-radius: 12px !important;
+  }
+  .home-foot {
+    padding: 28px 0 96px !important;
+    font-size: 13px !important;
+  }
+
+  /* 金刚区：一行铺满 */
+  .kingkong-grid {
+    grid-template-columns: repeat(10, 1fr) !important;
+  }
+  .kingkong-icon {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 26px !important;
+  }
+  .kingkong-name {
+    font-size: 13px !important;
+  }
+
+  /* 党员推荐横向滚动卡片更大 */
+  .rb-card {
+    width: 132px !important;
+  }
+  .rb-card img {
+    width: 120px !important;
+    height: 120px !important;
+  }
+  .rb-name {
+    font-size: 13px !important;
+  }
+  .rb-price {
+    font-size: 15px !important;
+  }
+
+  /* 拼团：多列 */
+  .gb-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 12px !important;
+    padding: 0 16px 16px !important;
+  }
+  .gb-img {
+    height: 150px !important;
+  }
+
+  /* 商品卡片：卡片化多列 + 阴影悬浮 */
+  .grid2 {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 14px !important;
+    padding: 0 16px 16px !important;
+  }
+  .product-card {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .product-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
+  }
+}
+
+@media screen and (min-width: 1100px) {
+  #app {
+    max-width: 1280px;
+  }
+  .van-tabbar--fixed,
+  .van-nav-bar--fixed,
+  .footer-bar {
+    width: 1280px !important;
+  }
+  .banner-img {
+    height: 320px !important;
+  }
+  .kingkong-grid {
+    grid-template-columns: repeat(10, 1fr) !important;
+  }
+  .gb-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+  .grid2 {
+    grid-template-columns: repeat(5, 1fr) !important;
   }
 }
