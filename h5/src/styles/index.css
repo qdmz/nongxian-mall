@@ -2,7 +2,7 @@
 :root {
   --tc-red: #e63946;
   /* 自适应壳：仅宽屏模式下生效 */
-  --h5-shell-max-width: 980px;
+  --h5-shell-max-width: 540px;
   --h5-shell-padding: min(16px, 6vw);
 
   --tc-red-deep: #c1121f;
@@ -30,9 +30,17 @@
 }
 
 /* ===================== 响应式基准设定 ===================== */
-/* 设计稿基准 375px；html base = 37.5px，所以 1rem ≈ 10px（桌面/平板自动受限） */
+/* 设计稿基准 375px；postcss-px-to-viewport 以 rem 输出，100rem = 375px，
+   因此 1rem 等价于 1% 视口宽度。在 375px 屏幕上 1rem = 3.75px，
+   这里把根字号锁定为 1vw，并在 >=375px 时封顶为 3.75px，
+   保证移动端随屏幕等比缩放、桌面端不再无限放大。 */
 html {
-  font-size: 37.5px;
+  font-size: 1vw;
+}
+@media screen and (min-width: 375px) {
+  html {
+    font-size: 3.75px;
+  }
 }
 
 html,
@@ -185,17 +193,6 @@ img {
   transition: left .2s, right .2s
 }
 
-.app-shell-wide .footer-bar {
-  left: auto;
-  right: auto;
-  left: var(--h5-shell-padding);
-  right: var(--h5-shell-padding);
-  width: calc(var(--h5-shell-max-width) - var(--h5-shell-padding) * 2);
-  margin-left: auto;
-  margin-right: auto;
-  max-width: var(--h5-shell-max-width);
-}
-
 .tc-btn {
   border: none;
   border-radius: 20px;
@@ -254,4 +251,29 @@ img {
 }
 .rich-content img {
   max-width: 100%;
+}
+
+/* ===================== 桌面端自适应：居中手机壳 ===================== */
+@media screen and (min-width: 540px) {
+  body {
+    background: #e8e8ec;
+  }
+  #app {
+    position: relative;
+    max-width: 540px;
+    margin: 0 auto;
+    background: #f5f5f7;
+    min-height: 100vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+  }
+  /* 固定定位元素跟随内容壳居中 */
+  .van-tabbar--fixed,
+  .van-nav-bar--fixed,
+  .footer-bar {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: 540px !important;
+    max-width: 100% !important;
+  }
 }

@@ -6,7 +6,7 @@ module.exports = {
       unitPrecision: 6,
       viewportUnit: 'rem',
       fontViewportUnit: 'rem',
-      selectorBlackList: ['.ignore', '._ignore', 'van-popup', '.tc-nav .van-nav-bar__title', '.van-nav-bar .van-nav-bar__title'],
+      selectorBlackList: ['html', '.ignore', '._ignore', 'van-popup', '.tc-nav .van-nav-bar__title', '.van-nav-bar .van-nav-bar__title'],
       minPixelValue: 1,
       mediaQuery: false
     }
