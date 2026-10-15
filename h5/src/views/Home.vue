@@ -63,6 +63,27 @@
           </div>
         </div>
 
+        <!-- 限时秒杀（2026-10-15） -->
+        <div class="section" v-if="home.seckill && home.seckill.length">
+          <div class="section-head">
+            <div class="section-title">⚡ 限时秒杀<span class="sk-cd-wrap" v-if="seckillEnd">距结束 <CountDown class="sk-cd" :end="seckillEnd" /></span></div>
+            <div class="section-more" @click="$router.push('/seckill')">更多秒杀 &gt;</div>
+          </div>
+          <div class="gb-grid">
+            <div class="gb-card" v-for="s in home.seckill.slice(0, 3)" :key="'sk-' + s.id" @click="$router.push('/seckill/' + s.id)">
+              <img class="gb-img" :src="s.cover_image" :alt="s.name" />
+              <div class="gb-info">
+                <div class="gb-name ellipsis-2">{{ s.name }}</div>
+                <div class="gb-row">
+                  <span class="gb-price">¥{{ Number(s.seckill_price).toFixed(2) }}</span>
+                  <span class="sk-old">¥{{ Number(s.original_price).toFixed(2) }}</span>
+                </div>
+                <div class="gb-ongoing">{{ s.state === 'upcoming' ? '即将开始' : s.state === 'sold_out' ? '已抢光' : '已抢' + s.sold_percent + '%' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 拼团专区 -->
         <div class="section" v-if="home.group_buy && home.group_buy.length">
           <div class="section-head">
@@ -70,7 +91,7 @@
             <div class="section-more" @click="$router.push('/group-buy')">更多拼团 &gt;</div>
           </div>
           <div class="gb-grid">
-            <div class="gb-card" v-for="g in home.group_buy.slice(0, 3)" :key="g.id" @click="$router.push('/group-buy/' + g.id)">
+            <div class="gb-card" v-for="g in home.group_buy.slice(0, 3)" :key="g.id" @click="$router.push('/group-buy/' + (g.activity_id || g.id))">
               <img class="gb-img" :src="g.cover_image" :alt="g.name" />
               <div class="gb-info">
                 <div class="gb-name ellipsis-2">{{ g.name }}</div>
@@ -128,10 +149,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getHome } from '../api/product'
 import ProductCard from '../components/ProductCard.vue'
+import CountDown from '../components/CountDown.vue'
 
 const router = useRouter()
 const home = ref(null)
@@ -154,6 +176,13 @@ async function loadHome() {
     loading.value = false
   }
 }
+
+// 秒杀区倒计时：取进行中活动里最早结束的一个，按服务端剩余秒数换算本地时刻
+const seckillEnd = computed(() => {
+  const list = (home.value && home.value.seckill) || []
+  const secs = list.filter((s) => s.state === 'ongoing' && Number(s.remaining_seconds) > 0).map((s) => Number(s.remaining_seconds))
+  return secs.length ? Math.floor(Date.now() / 1000) + Math.min(...secs) : 0
+})
 
 function onRefresh() {
   loadHome().finally(() => {
@@ -341,6 +370,25 @@ onMounted(loadHome)
   font-size: 13px;
 }
 
+.sk-cd-wrap {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #7a7d86;
+}
+.sk-cd {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #e63946;
+  color: #fff;
+  font-size: 11px;
+}
+.sk-old {
+  font-size: 10px;
+  color: #b0b3ba;
+  text-decoration: line-through;
+}
 .gb-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

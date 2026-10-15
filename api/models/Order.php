@@ -96,6 +96,10 @@ class Order extends Model
             if ((float)$order['use_balance'] > 0) {
                 User::walletChange((int)$order['user_id'], (float)$order['use_balance'], 'refund', '订单取消退回余额', 'order', $order['order_no']);
             }
+            // 2026-10-15：秒杀订单取消回补秒杀库存
+            if ((int)$order['type'] === 3) {
+                Seckill::restoreStock((int)($order['seckill_activity_id'] ?? 0), (int)$order['product_count']);
+            }
             // 拼团订单：未支付取消后释放团内名额，避免未付款订单把团"占满"
             if ((int)$order['type'] === 2) {
                 $member = $db->one('SELECT * FROM group_buy_members WHERE order_no = ? AND status = 1', [$order['order_no']]);

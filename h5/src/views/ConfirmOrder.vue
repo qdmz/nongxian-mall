@@ -132,6 +132,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { getCart } from '../api/cart'
 import { getProductDetail } from '../api/product'
+import { getSeckillDetail } from '../api/seckill'
 import { getAddresses } from '../api/user'
 import { createOrder, getFreight } from '../api/order'
 import { useUserStore } from '../store/user'
@@ -153,6 +154,7 @@ const showAddressPicker = ref(false)
 const freight = ref(0) // 运费（服务端按运费模板计算，拼团包邮）
 
 const fromCart = computed(() => route.query.from === 'cart')
+const seckillId = computed(() => Number(route.query.seckill_id || 0)) // 2026-10-15 秒杀下单
 
 const totalAmount = computed(() =>
   items.value.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0)
@@ -169,6 +171,10 @@ async function loadFreight() {
     freight.value = 0
     return
   }
+  if (seckillId.value) {
+    freight.value = await getFreight({ address_id: address.value.id, seckill_id: seckillId.value, quantity: items.value[0].quantity })
+    return
+  }
   freight.value = await getFreight({
     address_id: address.value.id,
     items: items.value.map((i) => ({ product_id: i.product_id, sku_id: i.sku_id || undefined, quantity: i.quantity }))
@@ -180,6 +186,26 @@ function fullAddress(addr) {
 }
 
 async function loadItems() {
+  if (seckillId.value) {
+    const sk = await getSeckillDetail(seckillId.value)
+    if (!sk || sk.state !== 'ongoing') {
+      showToast(sk && sk.state === 'upcoming' ? '秒杀尚未开始' : '秒杀已结束或已抢光')
+      router.replace(sk ? '/seckill/' + sk.id : '/seckill')
+      return
+    }
+    items.value = [
+      {
+        product_id: sk.product_id,
+        sku_id: Number(sk.sku_id) || undefined,
+        quantity: Math.max(1, Number(route.query.quantity || 1)),
+        name: sk.name,
+        image: sk.cover_image,
+        specs: (sk.sku_specs ? skuSpecsText(sk.sku_specs) + ' · ' : '') + '限时秒杀',
+        price: Number(sk.seckill_price)
+      }
+    ]
+    return
+  }
   if (fromCart.value) {
     const data = await getCart()
     const selected = (data?.list || []).filter((i) => !i.invalid && i.selected)
@@ -260,7 +286,16 @@ async function onSubmit() {
   }
   submitting.value = true
   try {
-    const order = await createOrder({
+    const useBal = useBalance.value && userStore.balance > 0 ? Math.min(userStore.balance, totalAmount.value + freight.value) : 0
+    const order = seckillId.value
+      ? await createOrder({
+          address_id: address.value.id,
+          seckill_id: seckillId.value,
+          quantity: items.value[0].quantity,
+          remark: remark.value,
+          use_balance: useBal
+        })
+      : await createOrder({
       address_id: address.value.id,
       items: items.value.map((i) => ({
         product_id: i.product_id,

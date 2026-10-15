@@ -32,6 +32,13 @@ class OrderController extends Controller
             json_error('收货地址不存在，请先添加地址');
         }
 
+        // 2026-10-15：秒杀下单 {seckill_id, quantity, address_id, use_balance, remark}
+        $seckillId = $this->request->int('seckill_id');
+        if ($seckillId > 0) {
+            $order = OrderService::createSeckillOrder((int)$userId, $seckillId, max(1, $this->request->int('quantity', 1)), $address, $remark, $useBalance);
+            json_success($order, '下单成功');
+        }
+
         // 商品项
         $items = $this->request->param('items');
         if (empty($items)) {
@@ -66,6 +73,16 @@ class OrderController extends Controller
         $address = UserAddress::where(['id' => $this->request->int('address_id'), 'user_id' => $userId]);
         if (!$address) {
             json_error('收货地址不存在');
+        }
+        // 2026-10-15：秒杀订单按秒杀价预估运费
+        $seckillId = $this->request->int('seckill_id');
+        if ($seckillId > 0) {
+            $sk = db()->one('SELECT seckill_price FROM seckill_activities WHERE id = ? AND status = 1', [$seckillId]);
+            if (!$sk) json_error('秒杀活动不存在或已结束');
+            $q = max(1, min(99, $this->request->int('quantity', 1)));
+            $goods = round((float)$sk['seckill_price'] * $q, 2);
+            $r = \App\Services\FreightService::calculate($address, $goods, $q);
+            json_success(['freight' => $r['fee'], 'goods_amount' => $goods, 'template_name' => $r['template_name'], 'free_threshold' => $r['free_threshold']]);
         }
         $items = $this->request->param('items');
         if (!is_array($items) || !$items || count($items) > 50) {

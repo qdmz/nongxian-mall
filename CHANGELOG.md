@@ -4,6 +4,32 @@
 
 ---
 
+## v0.09（2026-10-15）—— 首页拼团跳转修复 + 新增限时秒杀 + 拼团演示数据修正
+
+### 问题 1：H5 打开 `#/group-buy/9` 提示「拼团活动不存在或已结束」
+- **原因**：`GET /api/home` 的 `group_buy` 列表 SQL 选的是 `p.id`（商品 ID），首页拼团卡片按 `/group-buy/{id}` 跳转，于是把商品 ID 当成活动 ID 去查（湄潭翠芽商品 9 → 活动 9 不存在）。拼团专区列表、商品详情页拼团条、我的拼团、拼团分享页用的都是正确的活动/团 ID，只有首页错。
+- **修复**：
+  - `api/controllers/api/ProductController.php`：首页 `group_buy` 的 `id` 改为活动 ID，并新增 `activity_id`、`product_id`、`title`、`original_price` 字段；
+  - `h5/src/views/Home.vue`：拼团卡片按 `activity_id`（兼容 `id`）跳转；
+  - `api/controllers/api/GroupBuyController.php`：活动详情在活动 ID 不存在时，按商品 ID 回退查找该商品进行中的拼团活动，已分享出去的旧链接（如 `#/group-buy/9`）也能打开正确的活动。
+
+### 问题 2：秒杀专区（新功能）
+原系统没有任何秒杀表/接口/页面，本版完整新增：
+- **数据库**：新表 `seckill_activities`（秒杀价、独立秒杀库存、已售、每人限购、起止时间、排序、可指定规格）；`orders.seckill_activity_id`，订单 `type=3` 为秒杀订单 —— `sql/migrations/20261015_seckill_groupbuy_fix.sql`（可重复执行）。
+- **用户端接口**：`GET /api/seckill/activities`、`GET /api/seckill/activities/{id}`（带登录时返回 `my_bought`）；首页 `/api/home` 增加 `seckill`；商品详情增加 `seckill_activity`；下单复用 `POST /api/orders {seckill_id, quantity, address_id, use_balance, remark}`，运费预估 `POST /api/orders/freight {seckill_id, quantity, address_id}`。
+- **下单逻辑**（`OrderService::createSeckillOrder`）：活动行锁 → 校验时间与每人限购（未取消/未退款订单累计）→ 原子扣秒杀库存 + 商品/规格库存 → 按秒杀价计价、运费模板计算运费、可余额抵扣；未付款取消（含超时自动取消）与退款时回补秒杀库存。
+- **管理后台**：`/admin/seckill/activities` 增删改（停用/启用），权限沿用 `group_buy`；新页面「秒杀活动」（`admin/src/views/seckill/SeckillList.vue`），校验秒杀价必须低于单买价。
+- **H5**：首页「⚡ 限时秒杀」区（倒计时）、秒杀列表页 `#/seckill`、秒杀详情页 `#/seckill/:id`（倒计时按服务端剩余秒数换算、已抢进度、限购步进器）、商品详情页秒杀条、确认订单页支持 `seckill_id`。
+- **演示数据**：4 个秒杀活动（从迁移执行时刻到 2026-11-14 23:59:59 北京时间）：修文猕猴桃 16.80（单买 25.80，库存 50，限购 3）、野生黑木耳 23.90（35.00，40，限购 2）、威宁洋芋 3.99（6.80，100，限购 5）、红色助农·爱心礼盒A 89.00（128.00，20，限购 1）。
+
+### 拼团演示数据修正
+- 活动 1 原为「遵义朝天椒3斤家庭装 3人团」拼团价 **69.90**。拼团下单不带规格，按商品默认规格（1 斤，单买价 29.90）发货计价，69.90 高于单买价、且与“3斤”不符（3 斤家庭装规格单买价 79.90）。修正为「遵义朝天椒1斤 3人团」拼团价 **24.90**（与其它拼团约 8.5 折一致）。迁移中只在原值仍为 69.90 时更新。
+
+### 部署
+- 线上已执行迁移并部署 `api/` 改动、重新编译部署 `h5/`、`admin/`（旧产物保留为 `h5.bak.<ts>`、`admin.bak.<ts>`，旧 chunk 同时保留在新 assets 中）。
+
+---
+
 ## v0.08（2026-10-15）—— 安全加固 + 原路退款 / 钱包提现 / 运费模板 / 易支付对账
 
 本版本同步线上 `qiniu.ypvps.com` 于 2026-10-14 完成的两轮修复（后端以线上 `/var/www/nongxian-mall/api` 为准；线上前端只有编译产物，已把同等改动移植回 `admin/`、`h5/` 源码）。升级步骤见 `docs/UPGRADE-v0.08.md`。

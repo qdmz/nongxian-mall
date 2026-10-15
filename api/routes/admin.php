@@ -72,6 +72,12 @@ $router->delete('/admin/group-buy/activities/{id}', [\App\Controllers\Admin\Grou
 $router->get('/admin/group-buy/groups', [\App\Controllers\Admin\GroupBuyController::class, 'groups'], $auth);
 $router->get('/admin/group-buy/groups/{id}', [\App\Controllers\Admin\GroupBuyController::class, 'groupDetail'], $auth);
 
+// 秒杀管理（2026-10-15，权限 group_buy）
+$router->get('/admin/seckill/activities', [\App\Controllers\Admin\SeckillController::class, 'index'], $auth);
+$router->post('/admin/seckill/activities', [\App\Controllers\Admin\SeckillController::class, 'store'], $auth);
+$router->put('/admin/seckill/activities/{id}', [\App\Controllers\Admin\SeckillController::class, 'update'], $auth);
+$router->delete('/admin/seckill/activities/{id}', [\App\Controllers\Admin\SeckillController::class, 'destroy'], $auth);
+
 // 轮播图
 $router->get('/admin/banners', [\App\Controllers\Admin\BannerController::class, 'index'], $auth);
 $router->post('/admin/banners', [\App\Controllers\Admin\BannerController::class, 'store'], $auth);

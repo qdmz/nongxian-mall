@@ -6,6 +6,7 @@ use Core\Controller;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Seckill;
 
 /**
  * 用户端 - 商品
@@ -75,6 +76,9 @@ class ProductController extends Controller
             );
         }
 
+        // 2026-10-15：秒杀活动信息（进行中或即将开始）
+        $product['seckill_activity'] = Seckill::activeForProduct($id);
+
         // 推荐商品（同类）
         $product['related'] = db()->all(
             'SELECT id, name, cover_image, price, unit FROM products WHERE category_id = ? AND id != ? AND status = 1 ORDER BY sales DESC LIMIT 6',
@@ -109,7 +113,9 @@ class ProductController extends Controller
 
         // 拼团进行中的商品
         $groupBuyProducts = db()->all(
-            'SELECT p.id, p.name, p.cover_image, p.unit, a.group_price, a.required_count,
+            // 2026-10-15：id 改为拼团活动 ID（原为商品 ID，前台按 /group-buy/{id} 跳转会打开不存在的活动）；
+            // 另带 activity_id / product_id 两个明确字段
+            'SELECT a.id, a.id AS activity_id, p.id AS product_id, a.title, p.name, p.cover_image, p.unit, p.price AS original_price, a.group_price, a.required_count,
                     (SELECT COUNT(*) FROM group_buys gb WHERE gb.activity_id = a.id AND gb.status = 0 AND gb.expire_at > ?) AS group_count
              FROM group_buy_activities a
              INNER JOIN products p ON p.id = a.product_id AND p.status = 1
@@ -117,6 +123,9 @@ class ProductController extends Controller
              ORDER BY a.id DESC LIMIT 6',
             [time(), time(), time()]
         );
+
+        // 2026-10-15：秒杀专区（进行中优先，含即将开始）
+        $seckill = Seckill::listForShop(6);
 
         json_success([
             'banners' => $banners,
@@ -126,6 +135,7 @@ class ProductController extends Controller
             'new' => $newProducts,
             'red' => $red,
             'group_buy' => $groupBuyProducts,
+            'seckill' => $seckill,
         ]);
     }
 

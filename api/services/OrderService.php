@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\GroupBuy;
+use App\Models\Seckill;
 
 /**
  * 订单服务（核心业务逻辑）
@@ -244,6 +245,118 @@ class OrderService
     }
 
     /**
+     * 创建秒杀订单（2026-10-15 v0.09）
+     *  - 行锁活动 → 校验时间/限购 → 原子扣秒杀库存 + 商品/规格库存；
+     *  - 按秒杀价计价，运费按运费模板计算，可用余额抵扣；
+     *  - 未付款超时取消、退款时回补秒杀库存（见 Order::cancel / refund）。
+     */
+    public static function createSeckillOrder(int $userId, int $seckillId, int $quantity, array $address, string $remark = '', float $useBalance = 0.0): array
+    {
+        $quantity = max(1, $quantity);
+        if ($quantity > 99) {
+            json_error('秒杀商品单次最多购买 99 件');
+        }
+        db()->beginTransaction();
+        try {
+            // 行锁：同一活动的下单串行化，保证限购判断准确
+            $activity = db()->one('SELECT * FROM seckill_activities WHERE id = ? AND status = 1 FOR UPDATE', [$seckillId]);
+            if (!$activity) {
+                json_error('秒杀活动不存在或已结束');
+            }
+            $now = time();
+            if ((int)$activity['start_time'] > 0 && (int)$activity['start_time'] > $now) {
+                json_error('秒杀尚未开始');
+            }
+            if ((int)$activity['end_time'] > 0 && (int)$activity['end_time'] < $now) {
+                json_error('秒杀已结束');
+            }
+            $limit = (int)$activity['limit_per_user'];
+            if ($limit > 0) {
+                $bought = Seckill::boughtCount($seckillId, $userId);
+                if ($bought + $quantity > $limit) {
+                    json_error($bought > 0 ? ('每人限购 ' . $limit . ' 件，您已购买 ' . $bought . ' 件') : ('每人限购 ' . $limit . ' 件'));
+                }
+            }
+
+            $product = db()->one('SELECT * FROM products WHERE id = ? AND status = 1', [(int)$activity['product_id']]);
+            if (!$product) {
+                json_error('商品不存在或已下架');
+            }
+            $skuId = (int)$activity['sku_id'] ?: null;
+            $sku = null;
+            if ($skuId) {
+                $sku = db()->one('SELECT * FROM product_skus WHERE id = ? AND product_id = ? AND status = 1', [$skuId, (int)$product['id']]);
+                if (!$sku) {
+                    json_error('秒杀商品规格不存在');
+                }
+            }
+            $originalPrice = $sku ? (float)$sku['price'] : (float)$product['price'];
+
+            if (!Seckill::reduceStock($seckillId, $quantity)) {
+                json_error('手慢了，秒杀库存不足');
+            }
+            if (!Product::reduceStock((int)$product['id'], $skuId, $quantity)) {
+                json_error('商品库存不足');
+            }
+
+            $price = (float)$activity['seckill_price'];
+            $totalAmount = round($price * $quantity, 2);
+            $freight = FreightService::calculate($address, $totalAmount, $quantity);
+            $freightAmount = (float)$freight['fee'];
+            $grandTotal = round($totalAmount + $freightAmount, 2);
+
+            $user = User::find($userId);
+            $useBalance = round(max(0, min($useBalance, (float)$user['wallet_balance'], $grandTotal)), 2);
+            $payAmount = round($grandTotal - $useBalance, 2);
+            if ($useBalance > 0) {
+                if (!User::walletChange($userId, -$useBalance, 'consume', '秒杀订单消费（余额抵扣）', 'order', '')) {
+                    json_error('余额不足');
+                }
+            }
+
+            $addressStr = $address['province'] . $address['city'] . $address['district'] . ' ' . $address['detail'];
+            $orderId = Order::createOrder([
+                'order_no' => order_no(),
+                'user_id' => $userId,
+                'type' => 3,
+                'seckill_activity_id' => $seckillId,
+                'status' => $payAmount > 0 ? Order::STATUS_PENDING : Order::STATUS_PAID,
+                'total_amount' => $totalAmount,
+                'pay_amount' => $payAmount,
+                'discount_amount' => round(max(0, $originalPrice * $quantity - $totalAmount), 2),
+                'freight_amount' => $freightAmount,
+                'use_balance' => $useBalance,
+                'product_count' => $quantity,
+                'consignee' => $address['consignee'] ?? '',
+                'phone' => $address['phone'] ?? '',
+                'address' => $addressStr,
+                'remark' => $remark ?: null,
+                'pay_method' => $payAmount == 0 ? 'balance' : null,
+                'paid_at' => $payAmount == 0 ? time() : 0,
+            ], [[
+                'product_id' => (int)$product['id'],
+                'sku_id' => $skuId,
+                'name' => $product['name'],
+                'image' => $product['cover_image'],
+                'specs' => $sku ? $sku['specs'] : null,
+                'price' => $price,
+                'quantity' => $quantity,
+                'subtotal' => $totalAmount,
+            ]]);
+
+            if ($payAmount == 0) {
+                self::afterOrderPaid($orderId, 'balance');
+            }
+
+            db()->commit();
+            return Order::detailWithItems($orderId);
+        } catch (\Throwable $e) {
+            db()->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * 支付成功后处理（由 PayService 调用，在事务中）
      */
     public static function handleOrderPaid(string $orderNo, array $payData): void
@@ -470,6 +583,11 @@ class OrderService
             $items = $db->all('SELECT * FROM order_items WHERE order_id = ?', [$orderId]);
             foreach ($items as $item) {
                 Product::restoreStock((int)$item['product_id'], $item['sku_id'] ? (int)$item['sku_id'] : null, (int)$item['quantity']);
+            }
+
+            // 2026-10-15：秒杀订单回补秒杀库存
+            if ((int)$order['type'] === 3) {
+                Seckill::restoreStock((int)($order['seckill_activity_id'] ?? 0), (int)$order['product_count']);
             }
 
             // 拼团订单：团还在进行中 → 释放名额

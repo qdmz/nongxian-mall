@@ -53,6 +53,18 @@
         <div class="pd-farm-tip">每一笔订单都是对乡村振兴的支持</div>
       </div>
 
+      <!-- 秒杀活动条（2026-10-15） -->
+      <div class="pd-group-bar pd-seckill-bar" v-if="seckill" @click="goSeckill">
+        <div class="pd-group-left">
+          <div class="pd-group-price">
+            <span>⚡ 秒杀价</span>
+            <em>¥{{ Number(seckill.seckill_price).toFixed(2) }}</em>
+          </div>
+          <div class="pd-group-info">{{ seckill.state === 'upcoming' ? '即将开始' : '剩余 ' + seckill.stock + ' 件' }}<template v-if="Number(seckill.limit_per_user) > 0"> · 每人限购 {{ seckill.limit_per_user }}</template></div>
+        </div>
+        <van-button size="small" round class="tc-btn">{{ seckill.state === 'ongoing' ? '去抢购 >' : '去看看 >' }}</van-button>
+      </div>
+
       <!-- 拼团活动条 -->
       <div class="pd-group-bar" v-if="activity" @click="goGroupBuy">
         <div class="pd-group-left">
@@ -181,6 +193,7 @@ const images = computed(() => {
 })
 
 const activity = computed(() => product.value?.group_buy_activity || null)
+const seckill = computed(() => product.value?.seckill_activity || null)
 const groupBuyingCount = computed(() => product.value?.group_buying_count || 0)
 const displaySales = computed(() => Number(product.value?.display_sales ?? product.value?.sales ?? 0))
 
@@ -291,6 +304,12 @@ async function submitSku() {
         quantity: quantity.value
       }
     })
+  }
+}
+
+function goSeckill() {
+  if (seckill.value) {
+    router.push('/seckill/' + seckill.value.id)
   }
 }
 
@@ -422,6 +441,9 @@ onMounted(loadProduct)
   font-size: 11px;
   opacity: 0.9;
   margin-top: 2px;
+}
+.pd-seckill-bar {
+  background: linear-gradient(135deg, #d4380d, #fa8c16);
 }
 .pd-group-bar .van-button {
   background: #fff;

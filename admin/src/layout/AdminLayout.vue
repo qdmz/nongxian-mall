@@ -64,6 +64,11 @@
             <el-menu-item index="/group-buy/groups">拼团单列表</el-menu-item>
           </el-sub-menu>
 
+          <el-menu-item v-if="store.can('group_buy')" index="/seckill/activities">
+            <el-icon><Timer /></el-icon>
+            <template #title>秒杀活动</template>
+          </el-menu-item>
+
           <el-menu-item v-if="store.can('banners')" index="/banners">
             <el-icon><Picture /></el-icon>
             <template #title>轮播图管理</template>

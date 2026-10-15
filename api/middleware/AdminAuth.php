@@ -20,6 +20,7 @@ class AdminAuth
         'refunds' => 'orders',
         'deliveries' => 'orders',
         'group-buy' => 'group_buy',
+        'seckill' => 'group_buy', // 2026-10-15：秒杀与拼团同属营销活动
         'banners' => 'banners',
         'config' => 'config',
         'finance' => 'finance', // 2026-10-14b：提现审核/退款打款/对账，默认仅超级管理员

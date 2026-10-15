@@ -86,6 +86,12 @@ const routes = [
         meta: { title: '拼团单', icon: 'UserFilled' }
       },
       {
+        path: 'seckill/activities',
+        name: 'SeckillActivities',
+        component: () => import('../views/seckill/SeckillList.vue'),
+        meta: { title: '秒杀活动', icon: 'Timer' }
+      },
+      {
         path: 'banners',
         name: 'BannerList',
         component: () => import('../views/banners/BannerList.vue'),

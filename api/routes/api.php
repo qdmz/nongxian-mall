@@ -25,6 +25,10 @@ $router->get('/api/group-buy/activities', [\App\Controllers\Api\GroupBuyControll
 $router->get('/api/group-buy/activities/{id}', [\App\Controllers\Api\GroupBuyController::class, 'activityDetail']);
 $router->get('/api/group-buy/groups/{id}', [\App\Controllers\Api\GroupBuyController::class, 'groupDetail']);
 
+// 秒杀活动（公开浏览，2026-10-15）；下单走 POST /api/orders {seckill_id}
+$router->get('/api/seckill/activities', [\App\Controllers\Api\SeckillController::class, 'activities']);
+$router->get('/api/seckill/activities/{id}', [\App\Controllers\Api\SeckillController::class, 'show']);
+
 // 支付回调（易支付异步通知，不能有登录校验）
 $router->get('/api/pay/notify', [\App\Controllers\Api\OrderController::class, 'payNotify']);
 $router->post('/api/pay/notify', [\App\Controllers\Api\OrderController::class, 'payNotify']);

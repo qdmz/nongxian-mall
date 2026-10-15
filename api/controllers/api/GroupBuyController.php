@@ -61,7 +61,21 @@ class GroupBuyController extends Controller
             [$activityId]
         );
         if (!$activity) {
-            json_error('拼团活动不存在或已结束');
+            // 2026-10-15 兼容：旧版首页把商品 ID 当作活动 ID 跳转（/group-buy/{商品ID}），已分享出去的旧链接
+            // 在活动 ID 不存在时按商品 ID 找该商品当前进行中的拼团活动
+            $activity = db()->one(
+                'SELECT a.*, p.name, p.cover_image, p.price AS original_price, p.unit, p.subtitle
+                 FROM group_buy_activities a
+                 INNER JOIN products p ON p.id = a.product_id AND p.status = 1
+                 WHERE a.product_id = ? AND a.status = 1
+                   AND (a.start_time = 0 OR a.start_time <= ?) AND (a.end_time = 0 OR a.end_time >= ?)
+                 ORDER BY a.id DESC LIMIT 1',
+                [$activityId, time(), time()]
+            );
+            if (!$activity) {
+                json_error('拼团活动不存在或已结束');
+            }
+            $activityId = (int)$activity['id'];
         }
 
         // 进行中的团（可加入）
