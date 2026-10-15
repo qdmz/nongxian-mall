@@ -95,14 +95,16 @@ class GroupBuy extends Model
         );
         $count = 0;
         foreach ($expired as $group) {
-            // 全部退款
+            // 2026-10-14b：先原子标记失败（防并发重复处理，也防止付款中的参团者再加入），再给已付款成员退款
+            $claimed = db()->query('UPDATE group_buys SET status = 2, updated_at = ? WHERE id = ? AND status = 0', [time(), $group['id']])->rowCount();
+            if (!$claimed) continue;
+            // 成员都是已付款入团的（付款后才入团），全部退款（易支付部分原路退回）
             $members = db()->all('SELECT * FROM group_buy_members WHERE group_buy_id = ? AND status = 1', [$group['id']]);
             foreach ($members as $member) {
                 if ($member['order_no']) {
                     \App\Services\OrderService::refundByOrderNo($member['order_no'], '拼团超时未成团，自动退款');
                 }
             }
-            db()->query('UPDATE group_buys SET status = 2, updated_at = ? WHERE id = ? AND status = 0', [time(), $group['id']]);
             $count++;
         }
         return $count;

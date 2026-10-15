@@ -121,6 +121,28 @@ const routes = [
         component: () => import('../views/statistics/Statistics.vue'),
         meta: { title: '销量统计', icon: 'TrendCharts' }
       },
+      // 2026-10-14b 财务管理（提现审核 / 退款打款记录 / 易支付对账差异），页面为独立的 /manage/finance.html，此处 iframe 嵌入
+      {
+        path: 'finance/withdrawals',
+        name: 'FinanceWithdrawals',
+        component: () => import('../views/finance/FinanceFrame.vue'),
+        props: { tab: 'withdrawals' },
+        meta: { title: '提现审核', icon: 'Wallet', group: '财务管理' }
+      },
+      {
+        path: 'finance/refunds',
+        name: 'FinanceRefunds',
+        component: () => import('../views/finance/FinanceFrame.vue'),
+        props: { tab: 'refunds' },
+        meta: { title: '退款打款记录', icon: 'Wallet', group: '财务管理' }
+      },
+      {
+        path: 'finance/reconcile',
+        name: 'FinanceReconcile',
+        component: () => import('../views/finance/FinanceFrame.vue'),
+        props: { tab: 'reconcile' },
+        meta: { title: '易支付对账差异', icon: 'Wallet', group: '财务管理' }
+      },
       {
         path: 'profile',
         name: 'Profile',

@@ -15,6 +15,8 @@
         <van-button round size="small" class="wallet-btn wallet-btn-ghost" @click="$router.push('/order/list')">
           去消费
         </van-button>
+        <!-- 2026-10-14b 钱包提现（独立页面 /withdraw.html，见 h5/public/withdraw.html） -->
+        <van-button round size="small" class="wallet-btn wallet-btn-ghost" @click="goWithdraw">提现</van-button>
       </div>
     </div>
 
@@ -124,6 +126,10 @@ onMounted(() => {
   loadList()
   loadWalletInfo()
 })
+
+function goWithdraw() {
+  window.location.href = '/withdraw.html'
+}
 </script>
 
 <style scoped>

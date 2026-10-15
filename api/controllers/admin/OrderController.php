@@ -57,7 +57,7 @@ class OrderController extends Controller
         // 汇总
         $summaryWhere = '1=1';
         $summaryParams = [];
-        if (!empty($condition['status'])) {
+        if (isset($condition['status'])) { // 2026-10-14：原 !empty 导致 status=0 时汇总不生效
             $summaryWhere .= ' AND status = ?';
             $summaryParams[] = $condition['status'];
         }
@@ -126,6 +126,13 @@ class OrderController extends Controller
         }
         if ($order['status'] != Order::STATUS_PAID) {
             json_error('只有已支付待发货的订单才能发货');
+        }
+        // 2026-10-14b：拼团订单必须成团后才能发货（未成团的团超时会自动退款）
+        if ((int)$order['type'] === 2) {
+            $gstatus = db()->value('SELECT gb.status FROM group_buy_members m INNER JOIN group_buys gb ON gb.id = m.group_buy_id WHERE m.order_id = ? AND m.status = 1 LIMIT 1', [$id]);
+            if ((int)$gstatus !== 1) {
+                json_error('该拼团订单尚未成团，成团后才能发货');
+            }
         }
 
         $company = $this->request->string('company');
@@ -285,10 +292,15 @@ class OrderController extends Controller
         if (!$refund || $refund['status'] != 0) {
             json_error('退款申请不存在或已处理');
         }
+        // 2026-10-14：原子占用退款单，防管理员重复点击并发处理（1=处理中）
+        if (db()->query('UPDATE refunds SET status = 1, updated_at = ? WHERE id = ? AND status = 0', [time(), $id])->rowCount() === 0) {
+            json_error('退款申请正在处理或已处理');
+        }
 
         $action = $this->request->string('action'); // approve / reject
         if ($action === 'approve') {
             if (!OrderService::refund((int)$refund['order_id'], '管理员同意退款')) {
+                db()->query('UPDATE refunds SET status = 0 WHERE id = ? AND status = 1', [$id]);
                 json_error('退款处理失败');
             }
             db()->update('refunds', [
@@ -296,7 +308,7 @@ class OrderController extends Controller
                 'handled_by' => \Core\Auth::adminId(),
                 'updated_at' => time(),
             ], ['id' => $id]);
-            json_success(null, '已同意退款，退款金额已退到用户钱包');
+            json_success(null, '已同意退款：易支付付款部分原路退回（失败自动转钱包），余额部分退回钱包');
         } elseif ($action === 'reject') {
             $rejectReason = $this->request->string('reject_reason', '不符合退款条件');
             db()->update('refunds', [
@@ -305,8 +317,12 @@ class OrderController extends Controller
                 'handled_by' => \Core\Auth::adminId(),
                 'updated_at' => time(),
             ], ['id' => $id]);
-            // 订单恢复到已支付状态
-            Order::updateById((int)$refund['order_id'], ['status' => Order::STATUS_PAID]);
+            // 订单恢复到申请退款前的状态（2026-10-14：已发货的订单原来会被错误地恢复成"待发货"）
+            $hasDelivery = db()->value('SELECT COUNT(*) FROM deliveries WHERE order_id = ?', [(int)$refund['order_id']]);
+            db()->query(
+                'UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status = ?',
+                [$hasDelivery ? Order::STATUS_DELIVERED : Order::STATUS_PAID, time(), (int)$refund['order_id'], Order::STATUS_REFUNDING]
+            );
             db()->insert('notifications', [
                 'user_id' => (int)$refund['user_id'],
                 'title' => '退款申请未通过',
@@ -316,6 +332,7 @@ class OrderController extends Controller
             ]);
             json_success(null, '已拒绝退款');
         } else {
+            db()->query('UPDATE refunds SET status = 0 WHERE id = ? AND status = 1', [$id]);
             json_error('无效的操作');
         }
     }

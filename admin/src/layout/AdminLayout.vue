@@ -30,32 +30,32 @@
             <el-icon><Odometer /></el-icon>
             <template #title>仪表盘</template>
           </el-menu-item>
-          <el-menu-item index="/users">
+          <el-menu-item v-if="store.can('users')" index="/users">
             <el-icon><User /></el-icon>
             <template #title>用户管理</template>
           </el-menu-item>
-          <el-menu-item index="/categories">
+          <el-menu-item v-if="store.can('products')" index="/categories">
             <el-icon><Menu /></el-icon>
             <template #title>分类管理</template>
           </el-menu-item>
-          <el-menu-item index="/products">
+          <el-menu-item v-if="store.can('products')" index="/products">
             <el-icon><Goods /></el-icon>
             <template #title>商品管理</template>
           </el-menu-item>
-          <el-menu-item index="/orders">
+          <el-menu-item v-if="store.can('orders')" index="/orders">
             <el-icon><Document /></el-icon>
             <template #title>订单管理</template>
           </el-menu-item>
-          <el-menu-item index="/refunds">
+          <el-menu-item v-if="store.can('orders')" index="/refunds">
             <el-icon><RefreshLeft /></el-icon>
             <template #title>退款管理</template>
           </el-menu-item>
-          <el-menu-item index="/deliveries">
+          <el-menu-item v-if="store.can('orders')" index="/deliveries">
             <el-icon><Van /></el-icon>
             <template #title>配送管理</template>
           </el-menu-item>
 
-          <el-sub-menu index="group-buy">
+          <el-sub-menu v-if="store.can('group_buy')" index="group-buy">
             <template #title>
               <el-icon><ShoppingCart /></el-icon>
               <span>拼团管理</span>
@@ -64,12 +64,12 @@
             <el-menu-item index="/group-buy/groups">拼团单列表</el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item index="/banners">
+          <el-menu-item v-if="store.can('banners')" index="/banners">
             <el-icon><Picture /></el-icon>
             <template #title>轮播图管理</template>
           </el-menu-item>
 
-          <el-sub-menu index="config">
+          <el-sub-menu v-if="store.can('config')" index="config">
             <template #title>
               <el-icon><Setting /></el-icon>
               <span>系统配置</span>
@@ -80,7 +80,17 @@
             <el-menu-item index="/config/app">应用配置</el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item index="/statistics">
+          <el-sub-menu v-if="store.can('finance')" index="finance">
+            <template #title>
+              <el-icon><Wallet /></el-icon>
+              <span>财务管理</span>
+            </template>
+            <el-menu-item index="/finance/withdrawals">提现审核</el-menu-item>
+            <el-menu-item index="/finance/refunds">退款打款记录</el-menu-item>
+            <el-menu-item index="/finance/reconcile">易支付对账差异</el-menu-item>
+          </el-sub-menu>
+
+          <el-menu-item v-if="store.can('statistics')" index="/statistics">
             <el-icon><TrendCharts /></el-icon>
             <template #title>销量统计</template>
           </el-menu-item>
@@ -206,7 +216,8 @@ watch(isMobile, (val) => {
 })
 
 onMounted(() => {
-  if (store.isLoggedIn && !store.adminInfo) {
+  // 每次进入都刷新资料，保证角色权限变更后菜单及时更新
+  if (store.isLoggedIn) {
     store.fetchProfile().catch(() => {})
   }
   window.addEventListener('resize', onResize)

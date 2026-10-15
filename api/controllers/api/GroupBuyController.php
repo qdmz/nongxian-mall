@@ -117,7 +117,7 @@ class GroupBuyController extends Controller
         }
         // 活动信息
         $group['activity'] = db()->one(
-            'SELECT a.*, p.name AS product_name FROM group_buy_activities a WHERE a.id = ?',
+            'SELECT a.*, p.name AS product_name FROM group_buy_activities a LEFT JOIN products p ON p.id = a.product_id WHERE a.id = ?',
             [$group['activity_id']]
         );
         json_success($group);

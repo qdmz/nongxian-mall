@@ -18,6 +18,8 @@ class CronService
         $results['auto_confirm'] = OrderService::autoConfirmReceive();
         // 处理过期拼团
         $results['group_buy_expired'] = \App\Models\GroupBuy::processExpired();
+        // 2026-10-14b：原路退款（易支付）待处理/重试
+        $results['epay_refunds'] = RefundService::processPending();
         // 每日凌晨汇总昨日统计
         if (date('H') == '00' && date('i') < 5) {
             StatisticsService::aggregateDaily();

@@ -54,11 +54,16 @@ class VerifyCode extends Model
             'SELECT * FROM verify_codes WHERE target = ? AND type = ? AND scene = ? AND used = 0 AND expire_at > ? ORDER BY id DESC LIMIT 1',
             [$target, $type, $scene, time()]
         );
-        if (!$row || !hash_equals((string)$row['code'], (string)$code)) {
+        if (!$row) {
             return false;
         }
-        // 标记已使用
-        db()->update('verify_codes', ['used' => 1], ['id' => $row['id']]);
-        return true;
+        if (!hash_equals((string)$row['code'], (string)$code)) {
+            // 2026-10-14：错误 5 次作废，防 6 位验证码被暴力穷举
+            db()->query('UPDATE verify_codes SET fail_count = fail_count + 1, used = IF(fail_count >= 5, 1, used) WHERE id = ?', [$row['id']]);
+            return false;
+        }
+        // 标记已使用（原子，防同一验证码并发重复使用）
+        $affected = db()->query('UPDATE verify_codes SET used = 1 WHERE id = ? AND used = 0', [$row['id']])->rowCount();
+        return $affected > 0;
     }
 }

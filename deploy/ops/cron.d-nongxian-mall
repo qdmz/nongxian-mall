@@ -1,0 +1,4 @@
+# 田冲助农商城定时任务（2026-10-14 新增）：超时未支付订单取消、自动确认收货、过期拼团退款、每日统计
+* * * * * www-data flock -n /tmp/nongxian-mall-cron.lock php /var/www/nongxian-mall/api/cron.php >> /var/log/nongxian-mall/cron.log 2>&1
+# 易支付每日对账（2026-10-14b 新增）：对比昨日平台订单与本地支付单，只记录差异到 pay_reconcile_diffs，不改账
+15 3 * * * www-data flock -n /tmp/nongxian-mall-reconcile.lock php /var/www/nongxian-mall/api/scripts/reconcile_epay.php >> /var/log/nongxian-mall/reconcile.log 2>&1

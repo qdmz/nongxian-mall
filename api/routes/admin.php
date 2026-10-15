@@ -10,7 +10,7 @@
 $router->post('/admin/auth/login', [\App\Controllers\Admin\AuthController::class, 'login']);
 
 // ---------- 需要登录 ----------
-$auth = ['AdminAuth'];
+$auth = ['AdminAuth', 'AdminLog']; // 2026-10-14：挂上操作日志
 
 // 认证相关
 $router->get('/admin/auth/profile', [\App\Controllers\Admin\AuthController::class, 'profile'], $auth);
@@ -89,3 +89,10 @@ $router->get('/admin/config/logs', [\App\Controllers\Admin\ConfigController::cla
 
 // 上传
 $router->post('/admin/upload/image', [\App\Controllers\Admin\UploadController::class, 'image'], $auth);
+
+// 财务（2026-10-14b 新增；权限 finance，默认仅超级管理员）
+$router->get('/admin/finance/withdrawals', [\App\Controllers\Admin\FinanceController::class, 'withdrawals'], $auth);
+$router->post('/admin/finance/withdrawals/{id}/handle', [\App\Controllers\Admin\FinanceController::class, 'handleWithdrawal'], $auth);
+$router->get('/admin/finance/refund-records', [\App\Controllers\Admin\FinanceController::class, 'refundRecords'], $auth);
+$router->post('/admin/finance/refund-records/{id}/resolve', [\App\Controllers\Admin\FinanceController::class, 'resolveRefundRecord'], $auth);
+$router->get('/admin/finance/reconcile-diffs', [\App\Controllers\Admin\FinanceController::class, 'reconcileDiffs'], $auth);

@@ -1,3 +1,5 @@
 # 田冲助农商城 - app 容器定时任务（root crontab）
 # 自动取消超时订单 / 自动确认收货 / 过期拼团处理 / 统计汇总
 * * * * * php /var/www/html/api/cron.php >> /proc/1/fd/1 2>&1
+# 易支付每日对账（v0.08 新增）：每天 03:15 对比昨日易支付平台订单与本地支付单，差异写入 pay_reconcile_diffs，只记录不改账
+15 3 * * * php /var/www/html/api/scripts/reconcile_epay.php >> /proc/1/fd/1 2>&1

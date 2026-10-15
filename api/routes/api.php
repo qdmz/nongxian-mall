@@ -54,6 +54,12 @@ $router->get('/api/user/wallet', [\App\Controllers\Api\UserController::class, 'w
 $router->post('/api/user/recharge', [\App\Controllers\Api\UserController::class, 'recharge'], $auth);
 $router->get('/api/user/recharge-orders', [\App\Controllers\Api\UserController::class, 'rechargeOrders'], $auth);
 
+// 钱包提现（2026-10-14b 新增）
+$router->get('/api/user/withdraw/config', [\App\Controllers\Api\WithdrawController::class, 'config'], $auth);
+$router->post('/api/user/withdraw', [\App\Controllers\Api\WithdrawController::class, 'store'], $auth);
+$router->get('/api/user/withdrawals', [\App\Controllers\Api\WithdrawController::class, 'index'], $auth);
+$router->post('/api/user/withdrawals/{id}/cancel', [\App\Controllers\Api\WithdrawController::class, 'cancel'], $auth);
+
 // 站内消息
 $router->get('/api/user/notifications', [\App\Controllers\Api\UserController::class, 'notifications'], $auth);
 $router->post('/api/user/notifications/read', [\App\Controllers\Api\UserController::class, 'readNotifications'], $auth);
@@ -66,6 +72,7 @@ $router->post('/api/cart/clear-invalid', [\App\Controllers\Api\CartController::c
 $router->delete('/api/cart/{id}', [\App\Controllers\Api\CartController::class, 'destroy'], $auth);
 
 // 订单
+$router->post('/api/orders/freight', [\App\Controllers\Api\OrderController::class, 'freight'], $auth); // 2026-10-14b 运费预估
 $router->post('/api/orders', [\App\Controllers\Api\OrderController::class, 'store'], $auth);
 $router->get('/api/orders', [\App\Controllers\Api\OrderController::class, 'index'], $auth);
 $router->get('/api/orders/{id}', [\App\Controllers\Api\OrderController::class, 'show'], $auth);

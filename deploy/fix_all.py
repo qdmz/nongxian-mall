@@ -5,7 +5,7 @@ import os
 import sys
 import time
 
-PASSWORD = os.environ.get('DEPLOY_PWD', 'thanks12A#')
+PASSWORD = os.environ.get('DEPLOY_PWD', '')
 SERVER = 'qiniu.ypvps.com'
 LOCAL = os.path.dirname(os.path.abspath(__file__))
 MALL_ROOT = os.path.dirname(LOCAL)

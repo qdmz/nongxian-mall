@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>财务管理 - 田冲助农商城管理后台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #303133; background: #fff; }
+  .wrap { padding: 16px 20px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e4e7ed; margin-bottom: 14px; }
+  .tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; color: #606266; }
+  .tab.on { color: #c0392b; border-color: #c0392b; font-weight: 600; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  select, input { height: 32px; padding: 0 8px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; }
+  button { height: 30px; padding: 0 12px; border: 1px solid #dcdfe6; background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; }
+  button.p { background: #c0392b; border-color: #c0392b; color: #fff; }
+  button.ok { background: #67c23a; border-color: #67c23a; color: #fff; }
+  button.warn { background: #e6a23c; border-color: #e6a23c; color: #fff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border-bottom: 1px solid #ebeef5; padding: 8px 6px; text-align: left; vertical-align: top; }
+  th { background: #f5f7fa; color: #909399; font-weight: 500; white-space: nowrap; }
+  .tag { display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 12px; line-height: 20px; }
+  .t0 { background: #fdf6ec; color: #e6a23c; } .t1 { background: #f0f9eb; color: #67c23a; } .t2 { background: #fef0f0; color: #f56c6c; } .t3 { background: #f4f4f5; color: #909399; } .t4 { background: #ecf5ff; color: #409eff; }
+  .muted { color: #909399; font-size: 12px; }
+  .pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; }
+  .sum { color: #606266; margin-left: auto; }
+  .empty { text-align: center; color: #909399; padding: 30px 0; }
+  .msg { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 4px; background: #303133; color: #fff; display: none; z-index: 9; }
+  .tip { background: #f4f4f5; color: #606266; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab" data-tab="withdrawals">提现审核</div>
+    <div class="tab" data-tab="refunds">退款打款记录</div>
+    <div class="tab" data-tab="reconcile">易支付对账差异</div>
+  </div>
+  <div id="tip" class="tip"></div>
+  <div class="bar" id="bar"></div>
+  <div id="list"></div>
+  <div class="pager"><button id="prev">上一页</button><span id="pinfo"></span><button id="next">下一页</button></div>
+</div>
+<div class="msg" id="msg"></div>
+<script>
+(function () {
+  var token = localStorage.getItem('admin_token') || '';
+  var state = { tab: (location.hash || '#withdrawals').slice(1), page: 1, total: 0, pageSize: 20, filter: '' };
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(t) { var m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { m.style.display = 'none'; }, 2500); }
+  function ts(t) { if (!t) return '-'; var d = new Date(t * 1000), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function api(method, url, body) {
+    return fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return { code: r.status, msg: '请求失败（' + r.status + '）' }; }); })
+      .then(function (d) {
+        if (d.code === 401) { toast('登录已过期，请重新登录'); setTimeout(function () { top.location.href = '/manage/login'; }, 1200); throw new Error('401'); }
+        if (d.code !== 0) { toast(d.msg || '操作失败'); throw new Error(d.msg); }
+        return d;
+      });
+  }
+  var TIPS = {
+    withdrawals: '流程：用户申请提现后金额从可用余额转入冻结余额。请先在支付宝/微信/银行线下打款，再点「确认已打款」（可填转账流水号）；「驳回」会把金额退回用户余额。每笔只能处理一次。',
+    refunds: '易支付付款的订单退款时优先原路退回；平台明确拒绝时自动转退钱包。状态为「待人工」的记录表示结果不确定后又被平台拒绝，请到易支付商户后台核实：已退款→标记成功；未退款→重试或转退钱包。',
+    reconcile: '每天凌晨自动对比易支付平台订单与本站支付单，只记录差异，不修改任何账务。请逐条核实处理。'
+  };
+  var WST = { 0: ['待审核', 't0'], 1: ['已打款', 't1'], 2: ['已驳回', 't2'], 3: ['已撤销', 't3'] };
+  var RST = { 0: ['待处理', 't0'], 1: ['成功', 't1'], 2: ['原路失败·已转钱包', 't4'], 3: ['待人工', 't2'], 4: ['处理中', 't0'] };
+  var DT = { remote_paid_local_unpaid: '平台已付·本地未入账', local_paid_remote_missing: '本地已入账·平台查无', amount_mismatch: '金额不一致', status_mismatch: '状态不一致', remote_unknown: '平台有·本地无', refund_manual: '退款待人工' };
+
+  function renderBar() {
+    var h = '';
+    if (state.tab === 'withdrawals') h = '<select id="f"><option value="0">待审核</option><option value="">全部</option><option value="1">已打款</option><option value="2">已驳回</option><option value="3">已撤销</option></select><input id="kw" placeholder="提现单号/手机号/收款人" /><button class="p" id="q">查询</button><span class="sum" id="sum"></span>';
+    if (state.tab === 'refunds') h = '<select id="f"><option value="">全部</option><option value="3">待人工</option><option value="0">待处理</option><option value="1">成功</option><option value="2">已转钱包</option></select><button class="p" id="q">查询</button>';
+    if (state.tab === 'reconcile') h = '<input id="f" type="date" /><button class="p" id="q">查询</button>';
+    $('bar').innerHTML = h;
+    var f = $('f'); if (f) f.value = state.filter;
+    $('q').onclick = function () { state.filter = $('f').value; state.page = 1; load(); };
+  }
+  function load() {
+    var url, qs = 'page=' + state.page + '&page_size=' + state.pageSize;
+    if (state.tab === 'withdrawals') { url = '/admin/finance/withdrawals?' + qs + '&status=' + encodeURIComponent(state.filter) + '&keyword=' + encodeURIComponent(($('kw') || {}).value || ''); }
+    if (state.tab === 'refunds') url = '/admin/finance/refund-records?' + qs + '&status=' + encodeURIComponent(state.filter);
+    if (state.tab === 'reconcile') url = '/admin/finance/reconcile-diffs?' + qs + '&date=' + encodeURIComponent(state.filter);
+    $('list').innerHTML = '<div class="empty">加载中…</div>';
+    api('GET', url).then(function (d) {
+      var data = d.data || {}; state.total = data.total || 0;
+      $('pinfo').textContent = '第 ' + state.page + ' 页 / 共 ' + Math.max(1, Math.ceil(state.total / state.pageSize)) + ' 页（' + state.total + ' 条）';
+      if (state.tab === 'withdrawals' && data.summary && $('sum')) $('sum').textContent = '待审核 ' + data.summary.pending_count + ' 笔，共 ¥' + Number(data.summary.pending_amount).toFixed(2);
+      var list = data.list || [];
+      if (!list.length) { $('list').innerHTML = '<div class="empty">暂无数据</div>'; return; }
+      $('list').innerHTML = render(list);
+    }).catch(function () { $('list').innerHTML = '<div class="empty">加载失败</div>'; });
+  }
+  function render(list) {
+    var h = '<table><thead><tr>';
+    if (state.tab === 'withdrawals') {
+      h += '<th>提现单号</th><th>用户</th><th>金额</th><th>收款信息</th><th>状态</th><th>申请时间</th><th>处理</th><th>操作</th></tr></thead><tbody>';
+      list.forEach(function (w) {
+        var st = WST[w.status] || ['-', 't3'];
+        h += '<tr><td>' + esc(w.withdraw_no) + (w.remark ? '<div class="muted">备注：' + esc(w.remark) + '</div>' : '') + '</td>' +
+          '<td>' + esc(w.nickname) + '<div class="muted">' + esc(w.phone) + '</div><div class="muted">余额 ¥' + Number(w.wallet_balance || 0).toFixed(2) + ' / 冻结 ¥' + Number(w.frozen_balance || 0).toFixed(2) + '</div></td>' +
+          '<td><b>¥' + Number(w.amount).toFixed(2) + '</b></td>' +
+          '<td>' + esc(w.account_type_text) + '<div>' + esc(w.account_name) + '</div><div class="muted">' + esc(w.account_no) + (w.bank_name ? ' · ' + esc(w.bank_name) : '') + '</div></td>' +
+          '<td><span class="tag ' + st[1] + '">' + st[0] + '</span>' + (w.reject_reason ? '<div class="muted">' + esc(w.reject_reason) + '</div>' : '') + (w.transfer_no ? '<div class="muted">流水 ' + esc(w.transfer_no) + '</div>' : '') + '</td>' +
+          '<td>' + ts(w.created_at) + '</td><td>' + (w.handled_at ? ts(w.handled_at) + '<div class="muted">' + esc(w.handled_by_name || '') + '</div>' : '-') + '</td>' +
+          '<td>' + (w.status === 0 ? '<button class="ok" data-act="approve" data-id="' + w.id + '">确认已打款</button> <button class="warn" data-act="reject" data-id="' + w.id + '">驳回</button>' : '') + '</td></tr>';
+      });
+    } else if (state.tab === 'refunds') {
+      h += '<th>流水号</th><th>订单</th><th>用户</th><th>渠道</th><th>金额</th><th>状态</th><th>尝试</th><th>说明</th><th>时间</th><th>操作</th></tr></thead><tbody>';
+      list.forEach(function (r) {
+        var st = RST[r.status] || ['-', 't3'];
+        h += '<tr><td>' + esc(r.record_no) + '<div class="muted">' + esc(r.payment_no || '') + '</div></td><td>' + esc(r.order_no) + '</td><td>' + esc(r.nickname) + '<div class="muted">' + esc(r.phone) + '</div></td>' +
+          '<td>' + (r.channel === 'epay' ? '原路退回' : '钱包') + '</td><td>¥' + Number(r.amount).toFixed(2) + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td>' + esc(r.attempts) + '</td>' +
+          '<td class="muted">' + esc(r.reason) + (r.last_error ? '<div>' + esc(r.last_error) + '</div>' : '') + '</td><td>' + ts(r.created_at) + '<div class="muted">' + ts(r.updated_at) + '</div></td>' +
+          '<td>' + (Number(r.status) === 3 && r.channel === 'epay' ? '<button data-act="retry" data-id="' + r.id + '">重试</button> <button class="ok" data-act="mark_success" data-id="' + r.id + '">已退款</button> <button class="warn" data-act="to_wallet" data-id="' + r.id + '">转钱包</button>' : '') + '</td></tr>';
+      });
+    } else {
+      h += '<th>账单日</th><th>差异类型</th><th>支付单号</th><th>平台单号</th><th>本地金额</th><th>平台金额</th><th>本地/平台状态</th><th>说明</th><th>记录时间</th></tr></thead><tbody>';
+      list.forEach(function (d) {
+        h += '<tr><td>' + esc(d.bill_date) + '</td><td><span class="tag t2">' + esc(DT[d.diff_type] || d.diff_type) + '</span></td><td>' + esc(d.payment_no) + '</td><td>' + esc(d.trade_no) + '</td><td>' + esc(d.local_amount) + '</td><td>' + esc(d.remote_amount) + '</td><td>' + esc(d.local_status) + ' / ' + esc(d.remote_status) + '</td><td class="muted">' + esc(d.detail) + '</td><td>' + ts(d.created_at) + '</td></tr>';
+      });
+    }
+    return h + '</tbody></table>';
+  }
+  $('list').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var id = b.getAttribute('data-id'), act = b.getAttribute('data-act'), body, url;
+    if (state.tab === 'withdrawals') {
+      if (act === 'approve') { var tn = prompt('确认已线下打款？可填写转账流水号（选填）：', ''); if (tn === null) return; body = { action: 'approve', transfer_no: tn }; }
+      else { var rs = prompt('驳回原因（金额将退回用户余额）：', '收款信息有误'); if (rs === null) return; body = { action: 'reject', reason: rs || '不符合提现条件' }; }
+      url = '/admin/finance/withdrawals/' + id + '/handle';
+    } else {
+      var names = { retry: '重新调用易支付退款接口', mark_success: '标记为「平台已退款」（请确认已在易支付后台核实）', to_wallet: '把这笔金额退到用户钱包（请确认平台确实未退款）' };
+      if (!confirm('确定' + names[act] + '？')) return;
+      body = { action: act }; url = '/admin/finance/refund-records/' + id + '/resolve';
+    }
+    b.disabled = true;
+    api('POST', url, body).then(function (d) { toast(d.msg || '已处理'); load(); }).catch(function () { b.disabled = false; });
+  });
+  $('prev').onclick = function () { if (state.page > 1) { state.page--; load(); } };
+  $('next').onclick = function () { if (state.page * state.pageSize < state.total) { state.page++; load(); } };
+  function switchTab(t) {
+    if (!TIPS[t]) t = 'withdrawals';
+    state.tab = t; state.page = 1; state.filter = t === 'withdrawals' ? '0' : '';
+    [].forEach.call(document.querySelectorAll('.tab'), function (el) { el.classList.toggle('on', el.getAttribute('data-tab') === t); });
+    $('tip').textContent = TIPS[t]; renderBar(); load();
+  }
+  [].forEach.call(document.querySelectorAll('.tab'), function (el) { el.onclick = function () { location.hash = el.getAttribute('data-tab'); }; });
+  window.addEventListener('hashchange', function () { switchTab(location.hash.slice(1)); });
+  if (!token) { document.body.innerHTML = '<div class="empty">请先登录管理后台</div>'; return; }
+  switchTab(state.tab);
+})();
+</script>
+</body>
+</html>

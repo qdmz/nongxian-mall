@@ -67,6 +67,10 @@
             <span>商品总额</span>
             <span>¥{{ totalAmount.toFixed(2) }}</span>
           </div>
+          <div class="co-amount-row">
+            <span>运费</span>
+            <span>{{ freight > 0 ? '¥' + freight.toFixed(2) : '包邮' }}</span>
+          </div>
           <div class="co-amount-row" v-if="useBalance && balanceDeduct > 0">
             <span>余额抵扣</span>
             <span class="co-deduct">-¥{{ balanceDeduct.toFixed(2) }}</span>
@@ -129,7 +133,7 @@ import { showToast } from 'vant'
 import { getCart } from '../api/cart'
 import { getProductDetail } from '../api/product'
 import { getAddresses } from '../api/user'
-import { createOrder } from '../api/order'
+import { createOrder, getFreight } from '../api/order'
 import { useUserStore } from '../store/user'
 import { skuSpecsText } from '../utils'
 
@@ -146,6 +150,7 @@ const address = ref(null)
 const remark = ref('')
 const useBalance = ref(false)
 const showAddressPicker = ref(false)
+const freight = ref(0) // 运费（服务端按运费模板计算，拼团包邮）
 
 const fromCart = computed(() => route.query.from === 'cart')
 
@@ -155,9 +160,20 @@ const totalAmount = computed(() =>
 const balance = computed(() => userStore.balance)
 const balanceDeduct = computed(() => {
   if (!useBalance.value) return 0
-  return Math.min(userStore.balance, totalAmount.value)
+  return Math.min(userStore.balance, totalAmount.value + freight.value)
 })
-const payAmount = computed(() => Math.max(0, totalAmount.value - balanceDeduct.value))
+const payAmount = computed(() => Math.max(0, totalAmount.value + freight.value - balanceDeduct.value))
+
+async function loadFreight() {
+  if (!address.value || !items.value.length) {
+    freight.value = 0
+    return
+  }
+  freight.value = await getFreight({
+    address_id: address.value.id,
+    items: items.value.map((i) => ({ product_id: i.product_id, sku_id: i.sku_id || undefined, quantity: i.quantity }))
+  })
+}
 
 function fullAddress(addr) {
   return `${addr.province}${addr.city}${addr.district}${addr.detail}`
@@ -224,6 +240,7 @@ async function loadAddresses() {
 function chooseAddress(addr) {
   address.value = addr
   showAddressPicker.value = false
+  loadFreight()
 }
 
 function goAddAddress() {
@@ -251,7 +268,7 @@ async function onSubmit() {
         quantity: i.quantity
       })),
       remark: remark.value,
-      use_balance: useBalance.value && userStore.balance > 0 ? Math.min(userStore.balance, totalAmount.value) : 0,
+      use_balance: useBalance.value && userStore.balance > 0 ? Math.min(userStore.balance, totalAmount.value + freight.value) : 0,
       from_cart: fromCart.value ? 1 : 0
     })
     userStore.fetchCartCount().catch(() => {})
@@ -271,6 +288,7 @@ async function onSubmit() {
 onMounted(async () => {
   try {
     await Promise.all([loadItems(), loadAddresses()])
+    loadFreight()
     if (userStore.token) {
       await userStore.fetchProfile()
     }

@@ -4,7 +4,7 @@ import paramiko
 import os
 import time
 
-PASSWORD = os.environ.get('DEPLOY_PWD', 'thanks12A#')
+PASSWORD = os.environ.get('DEPLOY_PWD', '')
 SERVER = 'qiniu.ypvps.com'
 
 ssh = paramiko.SSHClient()

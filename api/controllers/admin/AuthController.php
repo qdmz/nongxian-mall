@@ -23,10 +23,17 @@ class AuthController extends Controller
             'password' => 'required|label:密码',
         ]);
 
+        // 2026-10-14：防暴力破解，同一 IP 15 分钟 20 次、同一账号 15 分钟 10 次失败上限
+        $rlIp = 'admin_login_ip:' . client_ip();
+        $rlUser = 'admin_login_user:' . strtolower($username);
+        \Core\RateLimit::check($rlIp, 20, 900, '登录尝试过多，请 15 分钟后再试');
+        \Core\RateLimit::check($rlUser, 10, 900, '该账号登录尝试过多，请 15 分钟后再试');
+
         $admin = AdminUser::findByUsername($username);
         if (!$admin || !password_verify($password, $admin['password'])) {
             json_error('用户名或密码错误');
         }
+        \Core\RateLimit::clear($rlUser);
         if ($admin['status'] != 1) {
             json_error('账号已被禁用');
         }
@@ -39,11 +46,18 @@ class AuthController extends Controller
 
         $token = Auth::issue((int)$admin['id'], 'admin', 86400 * 7); // 管理端7天有效
         $role = db()->one('SELECT * FROM admin_roles WHERE id = ?', [$admin['role_id']]);
+        \Core\RateLimit::clear($rlIp);
 
+        // 2026-10-14b：返回解析后的权限，供后台前端按角色隐藏菜单
+        $perms = \Middleware\AdminAuth::parsePerms((string)($role['permissions'] ?? ''));
+        $safe = AdminUser::safe($admin);
+        $safe['permissions'] = $perms;
+        $safe['role_slug'] = $role['slug'] ?? '';
         json_success([
             'token' => $token,
-            'admin' => AdminUser::safe($admin),
+            'admin' => $safe,
             'role' => $role,
+            'permissions' => $perms,
         ], '登录成功');
     }
 
@@ -55,9 +69,14 @@ class AuthController extends Controller
         $adminId = Auth::adminId();
         $admin = AdminUser::find($adminId);
         $role = db()->one('SELECT * FROM admin_roles WHERE id = ?', [$admin['role_id']]);
+        $perms = \Middleware\AdminAuth::parsePerms((string)($role['permissions'] ?? ''));
+        $safe = AdminUser::safe($admin);
+        $safe['permissions'] = $perms;
+        $safe['role_slug'] = $role['slug'] ?? '';
         json_success([
-            'admin' => AdminUser::safe($admin),
+            'admin' => $safe,
             'role' => $role,
+            'permissions' => $perms,
         ]);
     }
 
@@ -74,7 +93,12 @@ class AuthController extends Controller
         }
         $data['updated_at'] = time();
         db()->update('admin_users', $data, ['id' => $adminId]);
-        json_success(AdminUser::safe(AdminUser::find($adminId)), '更新成功');
+        // 2026-10-14b：带上权限，避免后台前端更新资料后丢失权限信息
+        $safe = AdminUser::safe(AdminUser::find($adminId));
+        $role = db()->one('SELECT permissions, slug FROM admin_roles WHERE id = ?', [(int)$safe['role_id']]);
+        $safe['permissions'] = \Middleware\AdminAuth::parsePerms((string)($role['permissions'] ?? ''));
+        $safe['role_slug'] = $role['slug'] ?? '';
+        json_success($safe, '更新成功');
     }
 
     /**

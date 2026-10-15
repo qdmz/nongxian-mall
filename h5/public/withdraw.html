@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="format-detection" content="telephone=no" />
+<title>余额提现 - 田冲助农商城</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f6f6f6; font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #323233; }
+  .nav { position: sticky; top: 0; height: 46px; background: #c0392b; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; z-index: 2; }
+  .nav a { position: absolute; left: 12px; color: #fff; text-decoration: none; font-size: 15px; }
+  .card { margin: 12px; padding: 16px; border-radius: 10px; background: linear-gradient(135deg, #c0392b, #e05a44); color: #fff; }
+  .card .num { font-size: 30px; font-weight: 600; margin: 4px 0; }
+  .card .sub { font-size: 12px; opacity: .85; }
+  .box { margin: 12px; background: #fff; border-radius: 10px; padding: 4px 14px; }
+  .row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f2f2f2; }
+  .row:last-child { border-bottom: 0; }
+  .row label { width: 84px; color: #646566; flex: none; }
+  .row input, .row select { flex: 1; border: 0; outline: 0; font-size: 15px; background: transparent; min-width: 0; }
+  .all { color: #c0392b; font-size: 13px; flex: none; margin-left: 8px; }
+  .btn { display: block; margin: 16px 12px; height: 44px; width: calc(100% - 24px); border: 0; border-radius: 22px; background: #c0392b; color: #fff; font-size: 16px; }
+  .btn:disabled { opacity: .55; }
+  .rule { margin: 0 16px; color: #969799; font-size: 12px; }
+  h3 { margin: 18px 16px 6px; font-size: 15px; }
+  .item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f2f2f2; }
+  .item:last-child { border-bottom: 0; }
+  .item .l div:first-child { font-size: 14px; }
+  .muted { color: #969799; font-size: 12px; }
+  .amt { text-align: right; font-weight: 600; }
+  .st0 { color: #ee8a0a; } .st1 { color: #07c160; } .st2 { color: #ee0a24; } .st3 { color: #969799; }
+  .cancel { margin-top: 4px; font-size: 12px; color: #1989fa; border: 0; background: none; padding: 0; }
+  .toast { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); background: rgba(0,0,0,.75); color: #fff; padding: 10px 16px; border-radius: 8px; display: none; max-width: 80%; text-align: center; z-index: 9; }
+  .empty { text-align: center; color: #969799; padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="/#/wallet">‹ 钱包</a>余额提现</div>
+<div class="card">
+  <div class="sub">可提现余额（元）</div>
+  <div class="num" id="bal">--</div>
+  <div class="sub" id="frozen"></div>
+</div>
+<div class="box">
+  <div class="row"><label>提现金额</label><input id="amount" type="number" inputmode="decimal" placeholder="请输入金额" /><span class="all" id="all">全部</span></div>
+  <div class="row"><label>收款方式</label><select id="type"><option value="alipay">支付宝</option><option value="wechat">微信</option><option value="bank">银行卡</option></select></div>
+  <div class="row"><label>收款人</label><input id="name" maxlength="50" placeholder="真实姓名" /></div>
+  <div class="row"><label id="noLabel">收款账号</label><input id="no" maxlength="64" placeholder="支付宝账号 / 手机号" /></div>
+  <div class="row" id="bankRow" style="display:none"><label>开户银行</label><input id="bank" maxlength="100" placeholder="如：中国农业银行贵阳分行" /></div>
+  <div class="row"><label>备注</label><input id="remark" maxlength="200" placeholder="选填" /></div>
+</div>
+<button class="btn" id="submit">申请提现</button>
+<div class="rule" id="rule"></div>
+<h3>提现记录</h3>
+<div class="box" id="list"><div class="empty">加载中…</div></div>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  var token = localStorage.getItem('token') || '';
+  var $ = function (id) { return document.getElementById(id); };
+  var cfg = null, reqId = null, busy = false;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(t) { var m = $('toast'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { m.style.display = 'none'; }, 2200); }
+  function ts(t) { var d = new Date(t * 1000), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function newReqId() { var a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a); return 'w' + Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function api(method, url, body) {
+    return fetch('/api' + url, { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return { code: r.status, msg: '网络错误' }; }); })
+      .then(function (d) {
+        if (d.code === 401) { location.href = '/#/login?redirect=/wallet'; throw new Error('401'); }
+        if (d.code !== 0) { toast(d.msg || '操作失败'); throw new Error(d.msg); }
+        return d.data;
+      });
+  }
+  function loadCfg() {
+    return api('GET', '/user/withdraw/config').then(function (c) {
+      cfg = c;
+      $('bal').textContent = Number(c.balance).toFixed(2);
+      $('frozen').textContent = Number(c.frozen_balance) > 0 ? ('提现审核中（冻结）¥' + Number(c.frozen_balance).toFixed(2)) : '';
+      $('rule').innerHTML = (c.enabled ? '' : '<b>提现功能暂未开放。</b>') + '单笔 ' + c.min + ' ~ ' + c.max + ' 元，每日最多 ' + c.daily_count + ' 次，同一时间只能有 1 笔在审核中。申请后金额先冻结，平台审核并打款后到账（一般 1-3 个工作日），被驳回或撤销会退回余额。';
+      $('submit').disabled = !c.enabled;
+    });
+  }
+  function loadList() {
+    api('GET', '/user/withdrawals?page=1&page_size=30').then(function (d) {
+      var list = (d && d.list) || [];
+      if (!list.length) { $('list').innerHTML = '<div class="empty">暂无提现记录</div>'; return; }
+      $('list').innerHTML = list.map(function (w) {
+        return '<div class="item"><div class="l"><div>' + esc(w.account_type_text) + ' · ' + esc(w.account_name) + ' ' + esc(w.account_no) + '</div><div class="muted">' + ts(w.created_at) + ' · ' + esc(w.withdraw_no) + '</div>' +
+          (w.reject_reason ? '<div class="muted">驳回原因：' + esc(w.reject_reason) + '</div>' : '') + '</div>' +
+          '<div class="amt">¥' + Number(w.amount).toFixed(2) + '<div class="st' + w.status + '" style="font-weight:400;font-size:12px">' + esc(w.status_text) + '</div>' +
+          (w.status === 0 ? '<button class="cancel" data-id="' + w.id + '">撤销</button>' : '') + '</div></div>';
+      }).join('');
+    }).catch(function () {});
+  }
+  $('type').onchange = function () {
+    var t = this.value; $('bankRow').style.display = t === 'bank' ? 'flex' : 'none';
+    $('no').placeholder = t === 'bank' ? '银行卡号' : (t === 'wechat' ? '微信号 / 绑定手机号' : '支付宝账号 / 手机号');
+  };
+  $('all').onclick = function () { if (cfg) $('amount').value = Math.min(Number(cfg.balance), Number(cfg.max) || Infinity).toFixed(2); };
+  ['amount', 'type', 'name', 'no', 'bank'].forEach(function (k) { $(k).addEventListener('input', function () { reqId = null; }); });
+  $('submit').onclick = function () {
+    if (busy) return;
+    var amount = Number($('amount').value);
+    if (!(amount > 0)) return toast('请输入提现金额');
+    if (cfg && amount < cfg.min) return toast('单笔最低提现 ' + cfg.min + ' 元');
+    if (cfg && amount > Number(cfg.balance)) return toast('可提现余额不足');
+    if (!$('name').value.trim()) return toast('请填写收款人姓名');
+    if (!$('no').value.trim()) return toast('请填写收款账号');
+    if ($('type').value === 'bank' && !$('bank').value.trim()) return toast('请填写开户银行');
+    if (!confirm('确认提现 ¥' + amount.toFixed(2) + ' 到 ' + $('type').options[$('type').selectedIndex].text + '（' + $('name').value.trim() + '）？')) return;
+    reqId = reqId || newReqId(); // 同一次填写重复点击使用同一幂等键，防止重复申请
+    busy = true; $('submit').disabled = true;
+    api('POST', '/user/withdraw', { amount: amount, account_type: $('type').value, account_name: $('name').value.trim(), account_no: $('no').value.trim(), bank_name: $('bank').value.trim(), remark: $('remark').value.trim(), request_id: reqId })
+      .then(function () { toast('提现申请已提交，等待审核'); $('amount').value = ''; reqId = null; loadCfg(); loadList(); })
+      .catch(function () {})
+      .then(function () { busy = false; $('submit').disabled = cfg ? !cfg.enabled : false; });
+  };
+  $('list').addEventListener('click', function (e) {
+    var b = e.target.closest('button.cancel'); if (!b) return;
+    if (!confirm('撤销这笔提现？金额将退回余额。')) return;
+    b.disabled = true;
+    api('POST', '/user/withdrawals/' + b.getAttribute('data-id') + '/cancel').then(function () { toast('已撤销，金额已退回余额'); loadCfg(); loadList(); }).catch(function () { b.disabled = false; });
+  });
+  if (!token) { location.href = '/#/login?redirect=/wallet'; return; }
+  loadCfg().catch(function () {}); loadList();
+})();
+</script>
+</body>
+</html>

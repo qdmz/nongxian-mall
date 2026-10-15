@@ -12,7 +12,11 @@ class Auth
     private static function secret(): string
     {
         if (!isset(self::$secret)) {
-            self::$secret = config('app.jwt_secret', 'nongxian-mall-secret-change-me');
+            $s = (string)config('app.jwt_secret', '');
+            if (strlen($s) < 32) {
+                throw new \RuntimeException('JWT secret 未配置或过短');
+            }
+            self::$secret = $s;
         }
         return self::$secret;
     }
@@ -38,6 +42,8 @@ class Auth
         $parts = explode('.', $token);
         if (count($parts) !== 3) return null;
         [$header, $payload, $sig] = $parts;
+        $h = json_decode((string)self::b64urlDecode($header), true);
+        if (!is_array($h) || ($h['alg'] ?? '') !== 'HS256') return null;
         $expected = self::b64url(hash_hmac('sha256', "{$header}.{$payload}", self::secret(), true));
         if (!hash_equals($expected, $sig)) return null;
         $data = json_decode(self::b64urlDecode($payload), true);

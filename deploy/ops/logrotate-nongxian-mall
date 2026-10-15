@@ -1,0 +1,9 @@
+/var/log/nongxian-mall/*.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+    su www-data www-data
+    create 0640 www-data www-data
+}

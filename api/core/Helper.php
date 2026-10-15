@@ -54,7 +54,8 @@ if (!function_exists('order_no')) {
     /** 生成订单号：年月日时分秒 + 微秒 + 随机数 */
     function order_no(string $prefix = ''): string
     {
-        return $prefix . date('YmdHis') . substr((string)microtime(true), -4, 3) . str_pad((string)random_int(0, 999), 3, '0', STR_PAD_LEFT);
+        // 2026-10-14b：原写法 substr(microtime(true), -4, 3) 在微秒位数不足时会带出小数点（如 P...14.22774），改为固定 3 位毫秒
+        return $prefix . date('YmdHis') . str_pad((string)((int)(microtime(true) * 1000) % 1000), 3, '0', STR_PAD_LEFT) . str_pad((string)random_int(0, 999), 3, '0', STR_PAD_LEFT);
     }
 }
 
@@ -86,7 +87,8 @@ if (!function_exists('generate_verify_code')) {
 if (!function_exists('client_ip')) {
     function client_ip(): string
     {
-        $keys = ['HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
+        // 2026-10-14：站点由 nginx 直接对外，不经过反向代理/CDN，X-Forwarded-For 可被伪造，只信任 REMOTE_ADDR
+        $keys = ['REMOTE_ADDR'];
         foreach ($keys as $key) {
             if (!empty($_SERVER[$key])) {
                 $ip = trim(explode(',', $_SERVER[$key])[0]);

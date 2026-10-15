@@ -57,6 +57,48 @@ class OrderController extends Controller
     }
 
     /**
+     * POST /api/orders/freight  {address_id, items:[{product_id, sku_id, quantity}]}
+     * 2026-10-14b：运费预估（与下单时服务端计算一致）
+     */
+    public function freight(): void
+    {
+        $userId = Auth::userId();
+        $address = UserAddress::where(['id' => $this->request->int('address_id'), 'user_id' => $userId]);
+        if (!$address) {
+            json_error('收货地址不存在');
+        }
+        $items = $this->request->param('items');
+        if (!is_array($items) || !$items || count($items) > 50) {
+            json_error('参数错误');
+        }
+        $goods = 0.0;
+        $pieces = 0;
+        foreach ($items as $it) {
+            if (!is_array($it)) json_error('参数错误');
+            $pid = (int)($it['product_id'] ?? 0);
+            $sid = !empty($it['sku_id']) ? (int)$it['sku_id'] : null;
+            $q = max(1, min(9999, (int)($it['quantity'] ?? 1)));
+            $p = db()->one('SELECT price FROM products WHERE id = ? AND status = 1', [$pid]);
+            if (!$p) continue;
+            $price = (float)$p['price'];
+            if ($sid) {
+                $sku = db()->one('SELECT price FROM product_skus WHERE id = ? AND product_id = ? AND status = 1', [$sid, $pid]);
+                if (!$sku) continue;
+                $price = (float)$sku['price'];
+            }
+            $goods += round($price * $q, 2);
+            $pieces += $q;
+        }
+        $r = \App\Services\FreightService::calculate($address, round($goods, 2), $pieces);
+        json_success([
+            'freight' => $r['fee'],
+            'goods_amount' => round($goods, 2),
+            'template_name' => $r['template_name'],
+            'free_threshold' => $r['free_threshold'],
+        ]);
+    }
+
+    /**
      * GET /api/orders
      * 订单列表（支持状态筛选）
      */
@@ -204,35 +246,46 @@ class OrderController extends Controller
 
         $payType = $this->request->string('pay_type'); // balance/alipay/wxpay/qqpay
 
-        // 余额支付
+        // 余额支付（2026-10-14 重写：事务 + 行锁，防并发重复扣款）
         if ($payType === 'balance') {
-            $payAmount = (float)$order['pay_amount'];
-            $user = User::find($userId);
-            if ((float)$user['wallet_balance'] < $payAmount) {
-                json_error('余额不足，请先充值');
+            db()->beginTransaction();
+            try {
+                $locked = db()->one('SELECT * FROM orders WHERE id = ? AND user_id = ? FOR UPDATE', [(int)$order['id'], $userId]);
+                if (!$locked || (int)$locked['status'] !== Order::STATUS_PENDING) {
+                    db()->rollBack();
+                    json_error('订单状态不可支付');
+                }
+                $payAmount = (float)$locked['pay_amount'];
+                $paymentNo = order_no('P');
+                if (!User::walletChange($userId, -$payAmount, 'consume', '余额支付订单', 'order', $locked['order_no'])) {
+                    db()->rollBack();
+                    json_error('余额不足，请先充值');
+                }
+                db()->insert('payments', [
+                    'payment_no' => $paymentNo,
+                    'biz_type' => 'order',
+                    'biz_no' => $locked['order_no'],
+                    'user_id' => $userId,
+                    'amount' => $payAmount,
+                    'method' => 'balance',
+                    'channel' => 'balance',
+                    'status' => 1,
+                    'paid_at' => time(),
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]);
+                OrderService::handleOrderPaid($locked['order_no'], ['type' => 'balance', 'trade_no' => $paymentNo]);
+                db()->commit();
+            } catch (\Throwable $e) {
+                db()->rollBack();
+                throw $e;
             }
-            // 创建支付单（标记为已支付）
-            $paymentNo = order_no('P');
-            db()->insert('payments', [
-                'payment_no' => $paymentNo,
-                'biz_type' => 'order',
-                'biz_no' => $order['order_no'],
-                'user_id' => $userId,
-                'amount' => $payAmount,
-                'method' => 'balance',
-                'channel' => 'balance',
-                'status' => 1,
-                'created_at' => time(),
-                'updated_at' => time(),
-            ]);
-            // 扣余额
-            if (!User::walletChange($userId, -$payAmount, 'consume', '余额支付订单', 'order', $order['order_no'])) {
-                json_error('余额扣款失败');
-            }
-            // 触发支付成功处理
-            OrderService::handleOrderPaid($order['order_no'], ['type' => 'balance', 'trade_no' => $paymentNo]);
             json_success(['success' => true, 'pay_url' => ''], '支付成功');
             return;
+        }
+
+        if (!in_array($payType, ['', 'alipay', 'wxpay', 'qqpay'], true)) {
+            json_error('不支持的支付方式');
         }
 
         $baseUrl = $this->getBaseUrl();
@@ -257,7 +310,7 @@ class OrderController extends Controller
             '农产品订单-' . $order['order_no'],
             (float)$order['pay_amount'],
             $baseUrl . '/api/pay/notify',
-            $baseUrl . '/h5/#/order/detail?id=' . $order['id'] . '&paid=1',
+            $baseUrl . '/#/order/detail?id=' . $order['id'] . '&paid=1',
             $payType
         );
 
@@ -275,7 +328,9 @@ class OrderController extends Controller
      */
     public function payNotify(): void
     {
-        $params = $_GET;
+        // 2026-10-14：兼容 GET / POST 两种通知方式
+        $params = array_merge($_POST, $_GET);
+        header('Content-Type: text/plain; charset=utf-8');
         if (empty($params['out_trade_no'])) {
             echo 'fail';
             exit;
@@ -297,6 +352,7 @@ class OrderController extends Controller
             PayService::handlePaySuccess($params['out_trade_no'], $params);
             echo 'success';
         } catch (\Throwable $e) {
+            error_log('[nongxian-mall] pay notify error: ' . $e->getMessage());
             echo 'fail';
         }
         exit;

@@ -68,36 +68,63 @@ class Order extends Model
         return (new static())->where(['order_no' => $orderNo]);
     }
 
-    /** 取消订单并归还库存 */
+    /** 取消订单并归还库存（2026-10-14 重写：事务 + 原子状态流转，防并发重复归还库存/余额） */
     public static function cancel(int $orderId, string $reason, int $operatorType = 0, ?int $operatorId = null): bool
     {
-        $model = new static();
-        $order = $model->find($orderId);
+        $order = static::find($orderId);
         if (!$order || $order['status'] != self::STATUS_PENDING) {
             return false;
         }
-        $model->updateById($orderId, [
-            'status' => self::STATUS_CANCELLED,
-            'cancelled_at' => time(),
-            'cancel_reason' => $reason,
-        ]);
-        // 归还库存
-        $items = db()->all('SELECT * FROM order_items WHERE order_id = ?', [$orderId]);
-        foreach ($items as $item) {
-            Product::restoreStock((int)$item['product_id'], $item['sku_id'] ? (int)$item['sku_id'] : null, (int)$item['quantity']);
+        $db = db();
+        $ownTx = !$db->pdo()->inTransaction();
+        if ($ownTx) $db->beginTransaction();
+        try {
+            $affected = $db->query(
+                'UPDATE orders SET status = ?, cancelled_at = ?, cancel_reason = ?, updated_at = ? WHERE id = ? AND status = ?',
+                [self::STATUS_CANCELLED, time(), $reason, time(), $orderId, self::STATUS_PENDING]
+            )->rowCount();
+            if ($affected === 0) {
+                if ($ownTx) $db->rollBack();
+                return false;
+            }
+            // 归还库存
+            $items = $db->all('SELECT * FROM order_items WHERE order_id = ?', [$orderId]);
+            foreach ($items as $item) {
+                Product::restoreStock((int)$item['product_id'], $item['sku_id'] ? (int)$item['sku_id'] : null, (int)$item['quantity']);
+            }
+            // 退还钱包抵扣
+            if ((float)$order['use_balance'] > 0) {
+                User::walletChange((int)$order['user_id'], (float)$order['use_balance'], 'refund', '订单取消退回余额', 'order', $order['order_no']);
+            }
+            // 拼团订单：未支付取消后释放团内名额，避免未付款订单把团"占满"
+            if ((int)$order['type'] === 2) {
+                $member = $db->one('SELECT * FROM group_buy_members WHERE order_no = ? AND status = 1', [$order['order_no']]);
+                if ($member) {
+                    $db->query('UPDATE group_buy_members SET status = 0 WHERE id = ?', [$member['id']]);
+                    $db->query(
+                        'UPDATE group_buys SET joined_count = GREATEST(joined_count - 1, 0), updated_at = ? WHERE id = ? AND status = 0',
+                        [time(), $member['group_buy_id']]
+                    );
+                    // 团长取消且团内已无有效成员：关闭该团
+                    $db->query(
+                        'UPDATE group_buys SET status = 3, updated_at = ? WHERE id = ? AND status = 0 AND joined_count = 0',
+                        [time(), $member['group_buy_id']]
+                    );
+                }
+            }
+            $db->insert('order_logs', [
+                'order_id' => $orderId,
+                'status' => self::STATUS_CANCELLED,
+                'description' => '订单取消：' . $reason,
+                'operator_type' => $operatorType,
+                'operator_id' => $operatorId,
+                'created_at' => time(),
+            ]);
+            if ($ownTx) $db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($ownTx) $db->rollBack();
+            throw $e;
         }
-        // 退还钱包抵扣
-        if ((float)$order['use_balance'] > 0) {
-            User::walletChange((int)$order['user_id'], (float)$order['use_balance'], 'refund', '订单取消退回余额', 'order', $order['order_no']);
-        }
-        db()->insert('order_logs', [
-            'order_id' => $orderId,
-            'status' => self::STATUS_CANCELLED,
-            'description' => '订单取消：' . $reason,
-            'operator_type' => $operatorType,
-            'operator_id' => $operatorId,
-            'created_at' => time(),
-        ]);
-        return true;
     }
 }

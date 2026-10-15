@@ -35,8 +35,26 @@ class UserController extends Controller
         if (empty($data)) {
             json_error('没有需要更新的内容');
         }
-        if (isset($data['nickname']) && mb_strlen($data['nickname']) > 20) {
+        foreach ($data as $k => $v) {
+            if (!is_scalar($v) && $v !== null) json_error('参数错误');
+        }
+        if (isset($data['nickname']) && mb_strlen((string)$data['nickname']) > 20) {
             json_error('昵称最多20个字符');
+        }
+        if (isset($data['real_name']) && mb_strlen((string)$data['real_name']) > 20) {
+            json_error('姓名最多20个字符');
+        }
+        if (isset($data['gender']) && !in_array((string)$data['gender'], ['0', '1', '2'], true)) {
+            json_error('性别取值不合法');
+        }
+        if (array_key_exists('birthday', $data) && ($data['birthday'] === '' || $data['birthday'] === null)) {
+            $data['birthday'] = null;
+        }
+        if (!empty($data['birthday']) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$data['birthday'])) {
+            json_error('生日格式应为 YYYY-MM-DD');
+        }
+        if (isset($data['avatar']) && $data['avatar'] !== '' && !preg_match('#^(/uploads/|https?://)#i', (string)$data['avatar'])) {
+            json_error('头像地址不合法');
         }
         $data['updated_at'] = time();
         db()->update('users', $data, ['id' => $userId]);
@@ -114,6 +132,15 @@ class UserController extends Controller
         $data = $this->request->only(['consignee', 'phone', 'province', 'city', 'district', 'detail', 'is_default']);
         if (empty($data)) {
             json_error('没有需要更新的内容');
+        }
+        foreach ($data as $v) {
+            if (!is_scalar($v) && $v !== null) json_error('参数错误');
+        }
+        if (isset($data['phone']) && !preg_match('/^1[3-9]\d{9}$/', (string)$data['phone'])) {
+            json_error('手机号格式不正确');
+        }
+        if (isset($data['detail']) && mb_strlen((string)$data['detail']) > 200) {
+            json_error('详细地址最多200个字符');
         }
         if (isset($data['is_default'])) {
             $data['is_default'] = $data['is_default'] ? 1 : 0;
@@ -205,7 +232,7 @@ class UserController extends Controller
             '钱包充值',
             $amount,
             $baseUrl . '/api/pay/notify',
-            $baseUrl . '/h5/#/user/wallet?recharged=1',
+            $baseUrl . '/#/wallet?recharged=1', // 2026-10-14b：原 /h5/#/user/wallet 路由不存在
             $this->request->string('pay_type')
         );
 

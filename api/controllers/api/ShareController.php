@@ -30,8 +30,8 @@ class ShareController extends Controller
             'click_count' => (int)$referral['click_count'],
             'order_count' => (int)$referral['order_count'],
             'earnings' => (float)$referral['earnings'],
-            'reward_rate' => (float)config('share.share_reward_rate', '0'),
-            'reward_enabled' => config('share.share_reward_enabled', '0') === '1',
+            'reward_rate' => (float)config('app.share_reward_rate', config('share.share_reward_rate', '0')),
+            'reward_enabled' => config('app.share_reward_enabled', config('share.share_reward_enabled', '0')) === '1',
         ]);
     }
 

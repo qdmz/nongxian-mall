@@ -162,12 +162,13 @@ python deploy/deploy_frontend.py --target all --build
 ### 3. Nginx 配置
 参考 `nginx/nginx.conf`，按实际路径和 PHP-FPM 配置修改。
 
-### 4. 配置定时任务（自动取消超时订单、自动确认收货、处理过期拼团、统计汇总）
-```bash
-crontab -e
-# 添加：
-* * * * * php /www/wwwroot/nongxian-mall/api/cron.php >> /dev/null 2>&1
+### 4. 配置定时任务（自动取消超时订单、自动确认收货、处理过期拼团、退款查单重试、统计汇总、易支付对账）
+推荐使用 `/etc/cron.d`（模板见 `deploy/ops/cron.d-nongxian-mall`，按实际路径修改），以 www-data 身份运行、flock 防重入：
+```cron
+* * * * * www-data flock -n /tmp/nongxian-mall-cron.lock php /www/wwwroot/nongxian-mall/api/cron.php >> /var/log/nongxian-mall/cron.log 2>&1
+15 3 * * * www-data flock -n /tmp/nongxian-mall-reconcile.lock php /www/wwwroot/nongxian-mall/api/scripts/reconcile_epay.php >> /var/log/nongxian-mall/reconcile.log 2>&1
 ```
+`cron.php` 与 `scripts/` 只能从命令行（CLI）运行，Nginx 必须只把 `/api/`、`/admin/` 交给 `index.php`（见 `nginx/nongxian-mall.conf`），否则 `cron.php` 可被公网触发。详见 `docs/UPGRADE-v0.08.md`。
 
 ### 5. 后台配置第三方接口
 登录管理后台 → 系统设置：

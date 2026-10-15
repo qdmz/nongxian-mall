@@ -19,6 +19,8 @@ class AuthController extends Controller
     public function register(): void
     {
         $registerType = $this->request->string('register_type', 'phone'); // phone_code / email_code / password
+        // 2026-10-14：同一 IP 每小时最多 20 次注册请求，防批量注册
+        \Core\RateLimit::check('user_register_ip:' . client_ip(), 20, 3600, '注册过于频繁，请稍后再试');
 
         if ($registerType === 'email_code') {
             $email = $this->request->string('email');
@@ -86,6 +88,11 @@ class AuthController extends Controller
     {
         $loginType = $this->request->string('login_type', 'password');
         $account = $this->request->string('account');
+        // 2026-10-14：防暴力破解
+        \Core\RateLimit::check('user_login_ip:' . client_ip(), 60, 900, '登录尝试过多，请 15 分钟后再试');
+        if ($account !== '') {
+            \Core\RateLimit::check('user_login_acc:' . strtolower($account), 10, 900, '该账号登录尝试过多，请 15 分钟后再试');
+        }
 
         if ($loginType === 'sms') {
             $phone = $this->request->string('phone');
@@ -107,6 +114,7 @@ class AuthController extends Controller
             if (!$user || !password_verify($password, $user['password'] ?? '')) {
                 json_error('账号或密码错误');
             }
+            \Core\RateLimit::clear('user_login_acc:' . strtolower($account));
         }
 
         if ($user['status'] != 1) {
@@ -133,6 +141,11 @@ class AuthController extends Controller
         $scene = $this->request->string('scene', 'register'); // register/login/verify/reset
 
         $this->validate(['target' => 'required|label:' . ($type === 'sms' ? '手机号' : '邮箱')]);
+        if (!in_array($type, ['sms', 'email'], true) || !in_array($scene, ['register', 'login', 'verify', 'reset'], true)) {
+            json_error('参数错误');
+        }
+        // 2026-10-14：同一目标每天最多 10 条，防短信/邮件轰炸
+        \Core\RateLimit::check('send_code_target:' . $type . ':' . strtolower($target), 10, 86400, '该号码今日获取验证码次数已达上限');
 
         if ($type === 'sms') {
             $this->validate(['target' => 'phone|label:手机号']);

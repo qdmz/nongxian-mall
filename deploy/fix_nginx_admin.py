@@ -7,7 +7,7 @@ import paramiko
 
 HOST = os.environ.get("DEPLOY_HOST", "qiniu.ypvps.com")
 USER = os.environ.get("DEPLOY_USER", "root")
-PWD = os.environ.get("DEPLOY_PWD", "thanks12A#")
+PWD = os.environ.get("DEPLOY_PWD", "")
 
 
 def connect():

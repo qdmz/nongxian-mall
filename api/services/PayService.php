@@ -63,9 +63,15 @@ class PayService
      */
     public static function verifyNotify(array $params): bool
     {
-        $sign = $params['sign'] ?? '';
+        // 2026-10-14：密钥为空时 md5 签名可被任意伪造，直接拒绝；商户号必须一致；常量时间比较
+        $key = (string)config('pay.epay_key', '');
+        if ($key === '') return false;
+        $sign = (string)($params['sign'] ?? '');
+        if ($sign === '') return false;
+        $pid = (string)config('pay.epay_pid', '');
+        if (isset($params['pid']) && $pid !== '' && (string)$params['pid'] !== $pid) return false;
         unset($params['sign'], $params['sign_type']);
-        return $sign === self::sign($params);
+        return hash_equals(self::sign($params), strtolower($sign));
     }
 
     /** MD5 签名（按 key ASCII 升序，过滤空值，拼 url 参数 + key） */
@@ -93,16 +99,31 @@ class PayService
         if ((int)$payment['status'] === 1) {
             return;
         }
+        // 2026-10-14：校验回调金额与支付单金额一致（防篡改/错单）
+        if (isset($notifyData['money']) && abs((float)$notifyData['money'] - (float)$payment['amount']) > 0.001) {
+            error_log('[nongxian-mall] pay notify amount mismatch: ' . $paymentNo . ' notify=' . $notifyData['money'] . ' local=' . $payment['amount']);
+            throw new \RuntimeException('支付金额不一致');
+        }
 
         db()->beginTransaction();
         try {
-            // 标记支付单成功
-            $paymentModel->updateById((int)$payment['id'], [
-                'status' => 1,
-                'trade_no' => $notifyData['trade_no'] ?? '',
-                'callback_data' => json_encode($notifyData, JSON_UNESCAPED_UNICODE),
-                'paid_at' => time(),
-            ]);
+            // 标记支付单成功（原子条件更新，防并发重复回调导致重复入账）
+            $affected = db()->query(
+                'UPDATE payments SET status = 1, trade_no = ?, callback_data = ?, paid_at = ?, updated_at = ? WHERE id = ? AND status = 0',
+                [
+                    (string)($notifyData['trade_no'] ?? ''),
+                    json_encode($notifyData, JSON_UNESCAPED_UNICODE),
+                    time(), time(), (int)$payment['id'],
+                ]
+            )->rowCount();
+            if ($affected === 0) {
+                db()->rollBack();
+                return; // 已被其他请求处理
+            }
+            $notifyData['type'] = $notifyData['type'] ?? $payment['method'];
+            $notifyData['_amount'] = (float)$payment['amount'];
+            $notifyData['_user_id'] = (int)$payment['user_id'];
+            $notifyData['_payment_no'] = (string)$payment['payment_no'];
 
             if ($payment['biz_type'] === 'order') {
                 OrderService::handleOrderPaid($payment['biz_no'], $notifyData);
@@ -125,10 +146,14 @@ class PayService
         if (!$recharge || (int)$recharge['status'] !== 0) {
             return;
         }
-        $rechargeModel->updateById((int)$recharge['id'], [
-            'status' => 1,
-            'paid_at' => time(),
-        ]);
+        // 2026-10-14：原子条件更新，防重复到账
+        $affected = db()->query(
+            'UPDATE recharge_orders SET status = 1, paid_at = ?, updated_at = ? WHERE id = ? AND status = 0',
+            [time(), time(), (int)$recharge['id']]
+        )->rowCount();
+        if ($affected === 0) {
+            return;
+        }
         // 充值 + 赠送到钱包
         $total = round((float)$recharge['amount'] + (float)$recharge['give_amount'], 2);
         \App\Models\User::walletChange(
@@ -152,5 +177,91 @@ class PayService
         if ($user && $user['email']) {
             EmailService::send($user['email'], '充值成功通知', "您好，您的充值 {$total} 元已到账。感谢您对助农事业的支持！");
         }
+    }
+    // ===================== 2026-10-14b：易支付商户 API（退款 / 查单 / 订单列表） =====================
+
+    /** 商户 API 调用（彩虹易支付兼容 /api.php?act=xxx），返回 [ok(bool), data(array|null), err(string)] */
+    private static function merchantApi(string $act, array $params, bool $post = false): array
+    {
+        $apiUrl = rtrim((string)config('pay.epay_api_url', ''), '/');
+        $pid = (string)config('pay.epay_pid', '');
+        $key = (string)config('pay.epay_key', '');
+        if ($apiUrl === '' || $pid === '' || $key === '') {
+            return [false, null, '易支付未配置'];
+        }
+        $params = array_merge(['pid' => $pid, 'key' => $key], $params);
+        $url = $apiUrl . '/api.php?act=' . rawurlencode($act);
+        $ch = curl_init();
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'nongxian-mall/1.0',
+        ];
+        if ($post) {
+            $opts[CURLOPT_URL] = $url;
+            $opts[CURLOPT_POST] = true;
+            $opts[CURLOPT_POSTFIELDS] = http_build_query($params);
+        } else {
+            $opts[CURLOPT_URL] = $url . '&' . http_build_query($params);
+        }
+        curl_setopt_array($ch, $opts);
+        $body = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($errno || $body === false) {
+            return [false, null, 'network:' . $errno];
+        }
+        $data = json_decode((string)$body, true);
+        if (!is_array($data)) {
+            return [false, null, 'bad_response:http' . $http . ':' . mb_substr(strip_tags((string)$body), 0, 120)];
+        }
+        return [true, $data, ''];
+    }
+
+    /**
+     * 易支付退款：返回 ['result' => 'success'|'fail'|'unknown', 'msg' => string]
+     * success=平台明确退款成功；fail=平台明确拒绝（可安全转退钱包）；unknown=网络/响应异常（不能确定，需稍后查单）
+     */
+    public static function epayRefund(string $outTradeNo, ?string $tradeNo, float $amount): array
+    {
+        $params = ['money' => sprintf('%.2f', $amount)];
+        if ($tradeNo) {
+            $params['trade_no'] = $tradeNo;
+        } else {
+            $params['out_trade_no'] = $outTradeNo;
+        }
+        [$ok, $data, $err] = self::merchantApi('refund', $params, true);
+        if (!$ok) {
+            return ['result' => 'unknown', 'msg' => $err];
+        }
+        $code = (int)($data['code'] ?? -99);
+        $msg = (string)($data['msg'] ?? '');
+        if ($code === 1) {
+            return ['result' => 'success', 'msg' => $msg ?: '退款成功'];
+        }
+        return ['result' => 'fail', 'msg' => 'code=' . $code . ' ' . $msg];
+    }
+
+    /** 查询单笔订单：返回平台订单数组或 null（不存在/失败） */
+    public static function epayQueryOrder(string $outTradeNo): ?array
+    {
+        [$ok, $data] = self::merchantApi('order', ['out_trade_no' => $outTradeNo]);
+        if (!$ok || (int)($data['code'] ?? 0) !== 1) {
+            return null;
+        }
+        return $data;
+    }
+
+    /** 订单列表（分页），返回 [ok, list] */
+    public static function epayListOrders(int $page = 1, int $limit = 50): array
+    {
+        [$ok, $data, $err] = self::merchantApi('orders', ['limit' => $limit, 'page' => $page]);
+        if (!$ok || (int)($data['code'] ?? 0) !== 1) {
+            return [false, [], $err ?: (string)($data['msg'] ?? '')];
+        }
+        return [true, is_array($data['data'] ?? null) ? $data['data'] : [], ''];
     }
 }

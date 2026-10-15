@@ -58,6 +58,7 @@ try {
     $app = new Core\App();
     $app->run();
 } catch (Throwable $e) {
+    error_log('[nongxian-mall] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() . ' ' . ($_SERVER['REQUEST_METHOD'] ?? '') . ' ' . ($_SERVER['REQUEST_URI'] ?? ''));
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
